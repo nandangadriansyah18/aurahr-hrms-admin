@@ -278,38 +278,19 @@ Agar rancangan di **Google Stitch**, komponen **Figma**, dan kode **CSS** seraga
 - **Link Publik Halaman Design System Figma (`01 - Design System`):** https://www.figma.com/design/ngTkoDdRVBud5g1gNqT7WU/AuraHR---Multi-Role-HRMS-Admin-Panel?node-id=0-1
 - **Link Project Google Stitch (7 Layar Multi-Role):** https://stitch.google.com/projects/9802515967131939644
 
-### 7.2 Hasil UI Wireframing & Eksplorasi Layout 7 Layar (Google Stitch)
-
-#### Overview Panorama Keseluruhan Canvas (Design System + 7 Layar Multi-Role)
-![Overview 7 Layar AuraHR di Google Stitch](../assets/img/stitch-overview.png)
-
-#### Layar 1 — Portal Login Multi-Role: Super Admin, HR, & Karyawan (`index.html`)
-![Wireframe Login Multi-Role Stitch](../assets/img/stitch-login.png)
-
-#### Layar 2 — Dashboard Analitik SDM (`pages/dashboard.html` — Role: HR & Super Admin)
-![Wireframe Dashboard SDM Stitch](../assets/img/stitch-dashboard.png)
-
-#### Layar 3 — Data Master Karyawan (`pages/data-master.html` — Role: HR & Super Admin)
-![Wireframe Data Master Stitch](../assets/img/stitch-datamaster.png)
-
-#### Layar 4 — Form Tambah / Edit Karyawan (`pages/form.html` — Role: HR & Super Admin)
-![Wireframe Form Karyawan Stitch](../assets/img/stitch-form.png)
-
-#### Layar 5 — Laporan Kehadiran & Rekapitulasi Payroll (`pages/laporan.html` — Role: HR & Super Admin)
-![Wireframe Laporan SDM Stitch](../assets/img/stitch-laporan.png)
-
-#### Layar 6 — Portal Mandiri Karyawan / ESS (`pages/portal-karyawan.html` — Role: Karyawan)
-![Wireframe Portal Karyawan ESS Stitch](../assets/img/stitch-ess-karyawan.png)
-
-#### Layar 7 — Manajemen Hak Akses RBAC & Master Departemen (`pages/manajemen-role.html` — Role: Super Admin)
-![Wireframe Manajemen Role Super Admin Stitch](../assets/img/stitch-superadmin-role.png)
+### 7.2 Ringkasan Eksplorasi Wireframe 7 Layar (Google Stitch)
+Seluruh 7 layar Multi-Role telah dibuat di Google Stitch ([Lihat Project Stitch](https://stitch.google.com/projects/9802515967131939644)) dan diekspor ke Figma:
+1. Portal Login Multi-Role (`index.html`)
+2. Dashboard Analitik SDM (`pages/dashboard.html`)
+3. Data Master Karyawan (`pages/data-master.html`)
+4. Form Tambah / Edit Karyawan (`pages/form.html`)
+5. Laporan Kehadiran & Rekapitulasi Payroll (`pages/laporan.html`)
+6. Portal Mandiri Karyawan / ESS (`pages/portal-karyawan.html`)
+7. Manajemen Hak Akses RBAC & Master Departemen (`pages/manajemen-role.html`)
 
 ---
 
 ### 7.3 Design System & High-Fidelity UI Architecture (Figma)
-
-#### Halaman `01 - Design System` (56 Variables, 8 Text Styles, 3 Glass Effects, & 4 Reusable Component Sets)
-![Figma Design System AuraHR](../assets/img/figma-design-system.png)
 
 #### Halaman `02 - Multi-Role HRMS UI` (Arsitektur Terstruktur 4 Zona Role & 7 Layar Editable Auto-Layout)
 ![Figma Multi-Role Architecture Overview](../assets/img/figma-hifi-overview.png)
