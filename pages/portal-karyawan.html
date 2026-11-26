@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Karyawan (ESS) — AuraHR Enterprise</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234F46E5'/%3E%3Cpath d='M16 6L6 11l10 5 10-5-10-5zM6 21l10 5 10-5M6 16l10 5 10-5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body data-base=".." data-page="ess">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigasi Portal Karyawan">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div class="sidebar__brand-text">
+          <span class="sidebar__brand-title">AuraHR</span>
+          <span class="sidebar__brand-sub">Employee Portal (ESS)</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav" id="sidebarNavContainer"></nav>
+
+      <div class="sidebar__footer">
+        <button type="button" class="btn btn--glass" data-action="logout" style="width:100%;justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Keluar Sesi</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar__left">
+          <button type="button" class="topbar__toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span>Portal Karyawan</span><span>/</span><span class="breadcrumb__current" id="essBreadcrumbCurrent">Beranda &amp; Presensi</span>
+          </nav>
+        </div>
+
+        <div class="topbar__right" style="margin-left:auto;">
+          <div class="user-pill">
+            <div class="avatar" id="topbarUserAvatar">BS</div>
+            <div class="user-pill__info">
+              <span class="user-pill__name" id="topbarUserName">Budi Santoso</span>
+              <span class="user-pill__role" id="topbarUserRole">Role: Karyawan ESS</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-area">
+        <section class="page-header">
+          <div>
+            <p class="page-header__eyebrow">EMPLOYEE SELF-SERVICE WORKSPACE</p>
+            <h1 class="page-header__title" id="essGreeting">Halo, Budi Santoso!</h1>
+            <p class="page-header__subtitle" id="essSubProfile">Senior Frontend Engineer • Engineering &amp; Product (NIP: AUR-0108)</p>
+          </div>
+          <div class="page-header__actions">
+            <button type="button" class="btn btn--glass" id="openPayslipBtn">Lihat Slip Gaji Digital</button>
+          </div>
+        </section>
+
+        <!-- VIEW 1: BERANDA & PRESENSI -->
+        <div id="essViewHome" style="display:flex;flex-direction:column;gap:24px;">
+          <!-- ROW 1: LIVE ATTENDANCE CLOCK + 3 PERSONAL KPI CARDS -->
+          <section class="split-grid">
+            <article class="glass-card glass-card--elevated" style="display:flex;flex-direction:column;justify-content:space-between;gap:18px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <select id="workModeSelect" class="form-control" style="width:auto;font-size:0.78rem;padding:6px 12px;">
+                  <option value="WFO - Kantor Pusat Jakarta">📍 WFO - Kantor Pusat Jakarta</option>
+                  <option value="Hybrid / Work From Home">🏠 Hybrid / Work From Home</option>
+                </select>
+                <span class="badge badge--active" id="attendanceStateBadge">Masuk: 07:56 WIB</span>
+              </div>
+
+              <div>
+                <p style="font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);">Waktu Presensi Langsung</p>
+                <div class="mono" id="liveDigitalClock" style="font-size:2.35rem;font-weight:800;color:var(--text-primary);line-height:1.15;margin-top:4px;">08:00:00 WIB</div>
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">Jadwal Shift Reguler: 08:00 – 17:00 WIB</p>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">
+                <span style="font-size:0.78rem;color:var(--text-secondary);">Klik untuk mencatat jam keluar/masuk:</span>
+                <button type="button" class="btn btn--primary" id="checkInOutBtn">Check-Out Pulang</button>
+              </div>
+            </article>
+
+            <div class="kpi-grid kpi-grid--3" style="grid-template-columns:1fr;gap:14px;">
+              <article class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;">
+                <div>
+                  <div class="stat-card__label">Sisa Kuota Cuti Tahunan</div>
+                  <div class="stat-card__value" style="font-size:1.45rem;" id="essLeaveQuota">9 / 12 Hari</div>
+                </div>
+                <span class="badge badge--info">Kuota Aktif 2026</span>
+              </article>
+
+              <article class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;">
+                <div>
+                  <div class="stat-card__label">Kehadiran Bulan Ini</div>
+                  <div class="stat-card__value" style="font-size:1.45rem;" id="essAttendanceCount">0 / 22 Hari</div>
+                </div>
+                <span class="badge badge--active" id="essAttendanceBadge">0% Kehadiran</span>
+              </article>
+
+              <article class="glass-card glass-card--interactive" id="payslipKpiCard" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;cursor:pointer;" title="Klik untuk membuka E-Slip Gaji">
+                <div>
+                  <div class="stat-card__label">Take Home Pay Terakhir</div>
+                  <div class="stat-card__value mono" style="font-size:1.35rem;" id="essThpValue">Rp 15.675.000</div>
+                  <div style="font-size:0.74rem;font-weight:700;color:var(--color-primary);margin-top:4px;">Klik untuk lihat &amp; cetak slip →</div>
+                </div>
+                <span class="badge badge--active">Lunas Ditransfer</span>
+              </article>
+            </div>
+          </section>
+
+          <!-- ROW 2 (HOME): ATTENDANCE LOG ONLY -->
+          <article class="glass-card" id="riwayatSection">
+            <div class="section-head">
+              <div>
+                <h2 class="section-head__title">Riwayat Presensi Masuk &amp; Keluar Saya</h2>
+                <p class="section-head__sub">Catatan jam masuk dan jam pulang harian yang tercatat di sistem.</p>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Mode / Lokasi</th>
+                    <th>Jam Masuk</th>
+                    <th>Jam Keluar</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="essAttendanceTbody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <!-- VIEW 2: PENGAJUAN CUTI & IZIN (HANYA MUNCUL SAAT KLIK MENU PENGAJUAN CUTI & IZIN) -->
+        <div id="essViewLeave" style="display:none;">
+          <section class="split-grid" id="formCutiSection">
+            <article class="glass-card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-head__title">Ajukan Cuti / Izin Baru</h2>
+                  <p class="section-head__sub">Formulir ini terhubung langsung ke antrean persetujuan HR Management.</p>
+                </div>
+              </div>
+
+              <form id="leaveRequestForm" novalidate style="display:flex;flex-direction:column;gap:14px;">
+                <div class="form-group">
+                  <label for="leaveType" class="form-label">Jenis Pengajuan <span class="req">*</span></label>
+                  <select id="leaveType" class="form-control">
+                    <option value="Cuti Tahunan">Cuti Tahunan</option>
+                    <option value="Izin Sakit">Izin Sakit</option>
+                    <option value="Cuti Khusus">Cuti Khusus (Menikah / Keluarga)</option>
+                  </select>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-group" id="grpLeaveStart">
+                    <label for="leaveStart" class="form-label">Tanggal Mulai <span class="req">*</span></label>
+                    <input type="date" id="leaveStart" class="form-control" required />
+                    <span class="form-error">Pilih tanggal mulai.</span>
+                  </div>
+
+                  <div class="form-group" id="grpLeaveEnd">
+                    <label for="leaveEnd" class="form-label">Tanggal Selesai <span class="req">*</span></label>
+                    <input type="date" id="leaveEnd" class="form-control" required />
+                    <span class="form-error">Tanggal selesai minimal sama dengan tanggal mulai.</span>
+                  </div>
+                </div>
+
+                <div class="form-group" id="grpLeaveReason">
+                  <label for="leaveReason" class="form-label">Alasan Pengajuan Cuti <span class="req">*</span></label>
+                  <textarea id="leaveReason" rows="3" class="form-control" placeholder="Tuliskan alasan pengajuan secara jelas (minimal 8 karakter)..." required></textarea>
+                  <span class="form-error">Alasan cuti wajib diisi minimal 8 karakter.</span>
+                </div>
+
+                <button type="submit" class="btn btn--primary" style="width:100%;">Kirim Pengajuan ke HR →</button>
+              </form>
+            </article>
+
+            <article class="glass-card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-head__title">Status Pengajuan Cuti Saya</h2>
+                  <p class="section-head__sub">Pembaruan real-time dari persetujuan tim HR Management.</p>
+                </div>
+              </div>
+
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Jenis</th>
+                      <th>Periode</th>
+                      <th>Alasan</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="essLeaveTbody"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <span>&copy; 2026 <strong>AuraHR Enterprise</strong> — Portal Mandiri Karyawan (ESS).</span>
+        <span>Tersinkronisasi Real-time dengan Dashboard HR</span>
+      </footer>
+    </div>
+  </div>
+
+  <script src="../assets/js/store.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    (function () {
+      const EMPLOYEE_NIP = 'AUR-0108';
+      let currentEssTab = 'all';
+
+      function getCurrentEmployee() {
+        const session = AuraStore.getSession();
+        const emps = AuraStore.getEmployees();
+        return emps.find(e => e.nip === session.nip) || emps.find(e => e.nip === EMPLOYEE_NIP) || emps[0];
+      }
+
+      function tickClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('liveDigitalClock').textContent = `${hh}:${mm}:${ss} WIB`;
+      }
+
+      function renderEssPortal() {
+        const emp = getCurrentEmployee();
+        document.getElementById('essGreeting').textContent = `Halo, ${emp.name.split(',')[0]}!`;
+        document.getElementById('essSubProfile').textContent = `${emp.position} • ${emp.dept} (NIP: ${emp.nip})`;
+
+        const gross = Number(emp.baseSalary || 0) + Number(emp.allowance || 0);
+        const net = Math.round(gross * 0.95);
+        document.getElementById('essThpValue').textContent = AuraApp.formatRupiah(net);
+
+        const myLeaves = AuraStore.getLeaveRequests().filter(l => l.nip === emp.nip);
+        const approvedDays = myLeaves.filter(l => l.status === 'Approved').reduce((s, l) => s + Number(l.days || 0), 0);
+        const remaining = Math.max(0, 12 - approvedDays);
+        document.getElementById('essLeaveQuota').textContent = `${remaining} / 12 Hari`;
+
+        const myAtt = AuraStore.getEssAttendances(emp.nip);
+        const uniqueAttDays = new Set(myAtt.map(a => a.date)).size;
+        const attPct = Math.min(100, Math.round((uniqueAttDays / 22) * 100));
+        const attCountEl = document.getElementById('essAttendanceCount');
+        const attBadgeEl = document.getElementById('essAttendanceBadge');
+        if (attCountEl) attCountEl.textContent = `${uniqueAttDays} / 22 Hari`;
+        if (attBadgeEl) {
+          attBadgeEl.textContent = uniqueAttDays > 0 ? `${attPct}% • ${myAtt.length} Log` : 'Belum Presensi';
+          attBadgeEl.className = uniqueAttDays > 0 ? 'badge badge--active' : 'badge badge--warning';
+        }
+        const openSession = myAtt.find(a => !a.checkOut);
+        const btn = document.getElementById('checkInOutBtn');
+        const stateBadge = document.getElementById('attendanceStateBadge');
+        if (openSession) {
+          btn.textContent = 'Check-Out Pulang';
+          btn.className = 'btn btn--primary';
+          stateBadge.textContent = `Masuk: ${openSession.checkIn}`;
+          stateBadge.className = 'badge badge--active';
+        } else {
+          btn.textContent = 'Check-In Masuk Kerja';
+          btn.className = 'btn btn--success';
+          stateBadge.textContent = 'Sesi Selesai / Siap Check-In';
+          stateBadge.className = 'badge badge--info';
+        }
+
+        // Render Attendance Table (Beranda & Presensi)
+        const attTbody = document.getElementById('essAttendanceTbody');
+        if (attTbody) {
+          attTbody.innerHTML = myAtt.length
+            ? myAtt.map(a => `
+                <tr>
+                  <td>${AuraApp.formatDateIndo(a.date)}</td>
+                  <td>${a.mode || 'WFO - Kantor Pusat Jakarta'}</td>
+                  <td class="mono" style="font-weight:700;color:var(--status-success);">${a.checkIn}</td>
+                  <td class="mono" style="font-weight:700;">${a.checkOut || '<span style="color:var(--text-muted);">Belum pulang</span>'}</td>
+                  <td><span class="badge ${a.checkOut ? 'badge--active' : 'badge--info'}">${a.checkOut ? 'Selesai' : 'Aktif'}</span></td>
+                </tr>
+              `).join('')
+            : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada catatan presensi hari ini.</td></tr>';
+        }
+
+        // Render Leave Table (Pengajuan Cuti & Izin)
+        const leaveTbody = document.getElementById('essLeaveTbody');
+        if (leaveTbody) {
+          leaveTbody.innerHTML = myLeaves.length
+            ? myLeaves.map(l => {
+                let b = '<span class="badge badge--warning">Menunggu HR</span>';
+                if (l.status === 'Approved') b = '<span class="badge badge--active">Disetujui HR</span>';
+                if (l.status === 'Rejected') b = '<span class="badge badge--danger">Ditolak HR</span>';
+                return `
+                  <tr>
+                    <td><strong>${l.type}</strong></td>
+                    <td>${AuraApp.formatDateIndo(l.startDate)} (${l.days} hr)</td>
+                    <td>${l.reason}</td>
+                    <td>${b}</td>
+                  </tr>
+                `;
+              }).join('')
+            : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada pengajuan cuti.</td></tr>';
+        }
+      }
+
+      function switchEssView(viewName) {
+        const homeEl = document.getElementById('essViewHome');
+        const leaveEl = document.getElementById('essViewLeave');
+        const crumbEl = document.getElementById('essBreadcrumbCurrent');
+        if (viewName === 'leave') {
+          homeEl.style.display = 'none';
+          leaveEl.style.display = 'block';
+          if (crumbEl) crumbEl.textContent = 'Pengajuan Cuti & Izin';
+        } else {
+          homeEl.style.display = 'flex';
+          leaveEl.style.display = 'none';
+          if (crumbEl) crumbEl.textContent = 'Beranda & Presensi';
+        }
+        document.querySelectorAll('[data-ess-view]').forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.essView === viewName);
+        });
+      }
+
+      document.getElementById('checkInOutBtn').addEventListener('click', () => {
+        const emp = getCurrentEmployee();
+        const mode = document.getElementById('workModeSelect').value;
+        const res = AuraStore.toggleCheckInOut(emp.nip, mode);
+        AuraApp.showToast(
+          res.action === 'checkin'
+            ? `Berhasil Check-In pada ${res.record.checkIn}!`
+            : `Berhasil Check-Out pulang pada ${res.record.checkOut}!`,
+          'success'
+        );
+        renderEssPortal();
+      });
+
+      function showPayslipModal() {
+        const emp = getCurrentEmployee();
+        const base = Number(emp.baseSalary || 0);
+        const allow = Number(emp.allowance || 0);
+        const deduct = Math.round((base + allow) * 0.05);
+        const net = base + allow - deduct;
+
+        AuraApp.openModal({
+          title: `E-Slip Gaji Resmi — November 2026`,
+          bodyHtml: `
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:0.84rem;">
+              <div style="padding:10px 12px;border-radius:10px;background:#F8FAFC;border:1px solid var(--border-subtle);">
+                <strong>${emp.name}</strong> (${emp.nip})<br>
+                <span style="color:var(--text-secondary);">${emp.position} • ${emp.dept}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;"><span>Gaji Pokok:</span><strong class="mono">${AuraApp.formatRupiah(base)}</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span>Tunjangan Jabatan:</span><strong class="mono">${AuraApp.formatRupiah(allow)}</strong></div>
+              <div style="display:flex;justify-content:space-between;color:var(--status-danger);"><span>Potongan PPh21 &amp; BPJS (5%):</span><strong class="mono">-${AuraApp.formatRupiah(deduct)}</strong></div>
+              <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px dashed var(--border-strong);font-size:0.95rem;">
+                <strong>Take Home Pay (Net):</strong>
+                <strong class="mono" style="color:var(--color-primary);">${AuraApp.formatRupiah(net)}</strong>
+              </div>
+            </div>
+          `,
+          confirmText: 'Cetak Slip',
+          cancelText: 'Tutup',
+          onConfirm: () => window.print()
+        });
+      }
+
+      document.getElementById('openPayslipBtn').addEventListener('click', showPayslipModal);
+      document.getElementById('payslipKpiCard').addEventListener('click', showPayslipModal);
+
+      document.addEventListener('click', (e) => {
+        const viewBtn = e.target.closest('[data-ess-view]');
+        if (viewBtn) {
+          switchEssView(viewBtn.dataset.essView);
+        } else if (e.target.closest('[data-ess-action="payslip"]')) {
+          showPayslipModal();
+        }
+      });
+
+      // Leave Request Form Validation & Submission
+      const startInput = document.getElementById('leaveStart');
+      const endInput = document.getElementById('leaveEnd');
+      const reasonInput = document.getElementById('leaveReason');
+
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+      startInput.value = tomorrow;
+      endInput.value = tomorrow;
+
+      document.getElementById('leaveRequestForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        let ok = true;
+
+        const sVal = startInput.value;
+        const eVal = endInput.value;
+        const rVal = reasonInput.value.trim();
+
+        document.getElementById('grpLeaveStart').classList.toggle('has-error', !sVal);
+        startInput.classList.toggle('is-invalid', !sVal);
+        if (!sVal) ok = false;
+
+        const endValid = Boolean(eVal) && (!sVal || eVal >= sVal);
+        document.getElementById('grpLeaveEnd').classList.toggle('has-error', !endValid);
+        endInput.classList.toggle('is-invalid', !endValid);
+        if (!endValid) ok = false;
+
+        const reasonValid = rVal.length >= 8;
+        document.getElementById('grpLeaveReason').classList.toggle('has-error', !reasonValid);
+        reasonInput.classList.toggle('is-invalid', !reasonValid);
+        if (!reasonValid) ok = false;
+
+        if (!ok) {
+          AuraApp.showToast('Mohon lengkapi tanggal dan alasan cuti dengan benar.', 'danger');
+          return;
+        }
+
+        const emp = getCurrentEmployee();
+        AuraStore.submitLeaveRequest({
+          nip: emp.nip,
+          employeeName: emp.name,
+          dept: emp.dept,
+          type: document.getElementById('leaveType').value,
+          startDate: sVal,
+          endDate: eVal,
+          reason: rVal
+        });
+
+        reasonInput.value = '';
+        AuraApp.showToast('Pengajuan cuti terkirim! Silakan cek di Dashboard HR untuk menyetujui.', 'success');
+        renderEssPortal();
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        tickClock();
+        setInterval(tickClock, 1000);
+        renderEssPortal();
+      });
+    })();
+  </script>
+</body>
+</html>

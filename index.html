@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Masuk ke Portal — AuraHR Enterprise</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234F46E5'/%3E%3Cpath d='M16 6L6 11l10 5 10-5-10-5zM6 21l10 5 10-5M6 16l10 5 10-5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./assets/css/style.css" />
+</head>
+
+<body data-base="." data-page="login">
+    <main class="login-wrapper">
+        <!-- LEFT SHOWCASE PANEL -->
+        <section class="login-showcase" aria-label="Informasi Sistem AuraHR">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="sidebar__logo">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+                </div>
+                <div>
+                    <div style="font-weight:800;font-size:1.15rem;">AuraHR <span class="badge badge--role-hr" style="margin-left:6px;">Enterprise v3.4</span></div>
+                    <div style="font-size:0.76rem;color:var(--text-secondary);">Human Resource Management System</div>
+                </div>
+            </div>
+
+            <div>
+                <h1 class="login-showcase__title">
+                    Sistem Informasi <span>Kepegawaian &amp; SDM</span> Terpadu
+                </h1>
+                <p style="margin-top:14px;font-size:0.96rem;color:var(--text-secondary);max-width:520px;">
+                    Kelola direktori pegawai, analitik kehadiran, persetujuan cuti dua arah, dan rekapitulasi payroll dalam satu ekosistem berbasis multi-role.
+                </p>
+            </div>
+
+            <div class="login-features">
+                <div class="login-feature-pill">
+                    <div class="stat-card__icon stat-card__icon--indigo">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;">Analytics SDM &amp; Chart.js Real-time</div>
+                        <div style="font-size:0.78rem;color:var(--text-secondary);">Pantau metrik kehadiran, komposisi divisi, dan estimasi payroll secara instan.</div>
+                    </div>
+                </div>
+
+                <div class="login-feature-pill">
+                    <div class="stat-card__icon stat-card__icon--emerald">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;">Connected Employee Self-Service (ESS)</div>
+                        <div style="font-size:0.78rem;color:var(--text-secondary);">Presensi mandiri &amp; pengajuan cuti karyawan langsung terhubung ke meja HR.</div>
+                    </div>
+                </div>
+
+                <div class="login-feature-pill">
+                    <div class="stat-card__icon stat-card__icon--violet">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;">Role-Based Access Control (3 Role Aktor)</div>
+                        <div style="font-size:0.78rem;color:var(--text-secondary);">Hak akses terpisah untuk Super Admin, HR Management, dan Portal Karyawan.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT FROSTED GLASS LOGIN CARD -->
+        <section class="glass-card glass-card--elevated" style="padding:34px 36px;border-radius:var(--radius-xl);" aria-label="Formulir Login">
+            <div style="margin-bottom:20px;">
+                <span class="badge badge--info" style="margin-bottom:8px;">Single Sign-On Workspace</span>
+                <h2 style="font-size:1.45rem;font-weight:800;letter-spacing:-0.02em;">Masuk ke Portal AuraHR</h2>
+                <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:4px;">Pilih peran akses atau gunakan kredensial akun kantor Anda.</p>
+            </div>
+
+            <!-- 3-Way Role Selector -->
+            <div style="margin-bottom:18px;">
+                <label class="form-label" style="display:block;margin-bottom:8px;">Pilih Peran Akses (Role)</label>
+                <div class="role-tabs" role="tablist">
+                    <button type="button" class="role-tab" data-role-tab="SUPER_ADMIN">Super Admin</button>
+                    <button type="button" class="role-tab is-active" data-role-tab="HR">HR Management</button>
+                    <button type="button" class="role-tab" data-role-tab="KARYAWAN">Portal Karyawan</button>
+                </div>
+            </div>
+
+            <form id="loginForm" novalidate style="display:flex;flex-direction:column;gap:16px;">
+                <div class="form-group" id="groupIdentity">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label for="loginIdentifier" class="form-label">Email Kantor atau NIP <span class="req">*</span></label>
+                        <span class="mono" style="font-size:0.72rem;color:var(--color-primary);">Contoh: AUR-0021</span>
+                    </div>
+                    <input type="text" id="loginIdentifier" class="form-control" value="siti.rahma@aurahr.id" placeholder="nama@aurahr.id atau AUR-XXXX" required />
+                    <span class="form-error" id="errIdentity">Masukkan email @aurahr.id atau kode NIP yang valid.</span>
+                </div>
+
+                <div class="form-group" id="groupPassword">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label for="loginPassword" class="form-label">Kata Sandi <span class="req">*</span></label>
+                        <button type="button" id="togglePwdBtn" style="font-size:0.74rem;font-weight:700;color:var(--color-primary);">Lihat Sandi</button>
+                    </div>
+                    <input type="password" id="loginPassword" class="form-control" value="password123" placeholder="Minimal 4 karakter" required />
+                    <span class="form-error" id="errPassword">Kata sandi wajib diisi (minimal 4 karakter).</span>
+                </div>
+
+                <div id="loginAlertBox" style="display:none;padding:10px 14px;border-radius:10px;background:var(--status-danger-bg);color:#B91C1C;font-size:0.8rem;font-weight:600;"></div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-secondary);">
+            <input type="checkbox" checked style="accent-color:var(--color-primary);" />
+            <span>Ingat sesi saya (30 hari)</span>
+          </label>
+                    <button type="button" id="forgotPwdBtn" style="font-weight:600;color:var(--color-primary);">Lupa kata sandi?</button>
+                </div>
+
+                <button type="submit" class="btn btn--primary" style="width:100%;padding:12px 18px;font-size:0.9rem;">
+          <span>Masuk ke Workspace →</span>
+        </button>
+            </form>
+
+            <!-- Quick Access Accounts -->
+            <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border-subtle);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);">Akses Cepat Akun Perusahaan</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted);">1-Klik Masuk</span>
+                </div>
+                <div class="demo-chips">
+                    <button type="button" class="demo-chip" data-quick-demo="SUPER_ADMIN" data-email="arya.pratama@aurahr.id">
+            <div class="demo-chip__role" style="color:var(--color-violet);">Super Admin</div>
+            <div class="demo-chip__user">Arya Pratama</div>
+          </button>
+                    <button type="button" class="demo-chip" data-quick-demo="HR" data-email="siti.rahma@aurahr.id">
+            <div class="demo-chip__role">HR Manager</div>
+            <div class="demo-chip__user">Siti Rahmawati</div>
+          </button>
+                    <button type="button" class="demo-chip" data-quick-demo="KARYAWAN" data-email="budi.santoso@aurahr.id">
+            <div class="demo-chip__role" style="color:var(--status-success);">Karyawan ESS</div>
+            <div class="demo-chip__user">Budi Santoso</div>
+          </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="./assets/js/store.js"></script>
+    <script src="./assets/js/app.js"></script>
+    <script>
+        (function() {
+            let selectedRole = 'HR';
+            const rolePresets = {
+                SUPER_ADMIN: 'arya.pratama@aurahr.id',
+                HR: 'siti.rahma@aurahr.id',
+                KARYAWAN: 'budi.santoso@aurahr.id'
+            };
+
+            const idInput = document.getElementById('loginIdentifier');
+            const pwdInput = document.getElementById('loginPassword');
+            const alertBox = document.getElementById('loginAlertBox');
+            const tabs = document.querySelectorAll('[data-role-tab]');
+
+            function activateRoleTab(role) {
+                selectedRole = role;
+                tabs.forEach(t => t.classList.toggle('is-active', t.dataset.roleTab === role));
+                idInput.value = rolePresets[role] || '';
+                pwdInput.value = 'password123';
+                alertBox.style.display = 'none';
+            }
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => activateRoleTab(tab.dataset.roleTab));
+            });
+
+            document.getElementById('togglePwdBtn').addEventListener('click', function() {
+                const isPwd = pwdInput.type === 'password';
+                pwdInput.type = isPwd ? 'text' : 'password';
+                this.textContent = isPwd ? 'Sembunyikan' : 'Lihat Sandi';
+            });
+
+            document.getElementById('forgotPwdBtn').addEventListener('click', () => {
+                AuraApp.openModal({
+                    title: 'Bantuan Reset Kata Sandi',
+                    bodyHtml: '<p style="color:var(--text-secondary);">Untuk keamanan data kepegawaian, silakan hubungi <strong>Super Admin / IT Support</strong> di menu Manajemen Akun untuk melakukan reset kata sandi akun kantor Anda.</p>',
+                    confirmText: 'Mengerti'
+                });
+            });
+
+            function redirectByRole(role) {
+                if (role === 'KARYAWAN') {
+                    window.location.href = './pages/portal-karyawan.html';
+                } else {
+                    window.location.href = './pages/dashboard.html';
+                }
+            }
+
+            document.querySelectorAll('[data-quick-demo]').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const role = chip.dataset.quickDemo;
+                    const acc = AuraStore.getAccounts().find(a => a.email.toLowerCase() === chip.dataset.email.toLowerCase());
+                    activateRoleTab(role);
+                    if (acc) {
+                        pwdInput.value = acc.password;
+                        const res = AuraStore.login(acc.email, acc.password);
+                        if (res.ok) {
+                            AuraApp.showToast('Berhasil masuk sebagai ' + res.session.name, 'success');
+                            setTimeout(() => redirectByRole(res.session.role), 300);
+                        } else {
+                            alertBox.textContent = res.message;
+                            alertBox.style.display = 'block';
+                        }
+                    }
+                });
+            });
+
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                alertBox.style.display = 'none';
+                let valid = true;
+
+                const idVal = idInput.value.trim();
+                const pwdVal = pwdInput.value.trim();
+
+                const grpId = document.getElementById('groupIdentity');
+                const grpPwd = document.getElementById('groupPassword');
+
+                if (!idVal || (!idVal.includes('@') && !/^aur-\d+/i.test(idVal))) {
+                    grpId.classList.add('has-error');
+                    idInput.classList.add('is-invalid');
+                    valid = false;
+                } else {
+                    grpId.classList.remove('has-error');
+                    idInput.classList.remove('is-invalid');
+                }
+
+                if (!pwdVal || pwdVal.length < 4) {
+                    grpPwd.classList.add('has-error');
+                    pwdInput.classList.add('is-invalid');
+                    valid = false;
+                } else {
+                    grpPwd.classList.remove('has-error');
+                    pwdInput.classList.remove('is-invalid');
+                }
+
+                if (!valid) return;
+
+                const res = AuraStore.login(idVal, pwdVal, selectedRole);
+                if (!res.ok) {
+                    alertBox.textContent = res.message;
+                    alertBox.style.display = 'block';
+                    return;
+                }
+
+                AuraApp.showToast('Selamat datang, ' + res.session.name + '!', 'success');
+                setTimeout(() => redirectByRole(res.session.role), 320);
+            });
+        })();
+    </script>
+</body>
+
+</html>

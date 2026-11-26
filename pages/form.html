@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form Tambah / Edit Karyawan — AuraHR Enterprise</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234F46E5'/%3E%3Cpath d='M16 6L6 11l10 5 10-5-10-5zM6 21l10 5 10-5M6 16l10 5 10-5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body data-base=".." data-page="form">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div class="sidebar__brand-text">
+          <span class="sidebar__brand-title">AuraHR</span>
+          <span class="sidebar__brand-sub">HR Intelligence Suite</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav" id="sidebarNavContainer"></nav>
+
+      <div class="sidebar__footer">
+        <div class="cutoff-widget">
+          <div class="cutoff-widget__label">Cutoff Payroll</div>
+          <div class="cutoff-widget__date">25 Nov 2026 • 4 Hari Lagi</div>
+          <div class="cutoff-widget__bar"><div class="cutoff-widget__fill"></div></div>
+        </div>
+        <button type="button" class="btn btn--glass" data-action="logout" style="width:100%;justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Keluar Sesi</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar__left">
+          <button type="button" class="topbar__toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span>Kepegawaian</span><span>/</span><span class="breadcrumb__current" id="breadcrumbFormTitle">Tambah Data Karyawan</span>
+          </nav>
+        </div>
+
+        <div class="topbar__center">
+          <div class="global-search">
+            <svg class="global-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="globalSearchInput" class="global-search__input" placeholder="Cari NIP atau nama karyawan..." autocomplete="off" />
+            <span class="global-search__kbd">Ctrl+K</span>
+          </div>
+          <div class="search-results-dropdown" id="globalSearchDropdown"></div>
+        </div>
+
+        <div class="topbar__right">
+          <button type="button" class="notif-btn" id="topbarNotifBtn" aria-label="Notifikasi">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-btn__dot" id="topbarNotifCount">0</span>
+          </button>
+          <div class="user-pill">
+            <div class="avatar" id="topbarUserAvatar">SR</div>
+            <div class="user-pill__info">
+              <span class="user-pill__name" id="topbarUserName">Siti Rahmawati</span>
+              <span class="user-pill__role" id="topbarUserRole">Role: HR Management</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-area">
+        <section class="page-header">
+          <div>
+            <p class="page-header__eyebrow">03 / DIREKTORI PEGAWAI • FORMULIR INTERAKTIF</p>
+            <h1 class="page-header__title" id="formMainTitle">Tambah Data Karyawan Baru</h1>
+            <p class="page-header__subtitle">Lengkapi profil identitas, penempatan organisasi, dan paket remunerasi dengan validasi JavaScript real-time.</p>
+          </div>
+          <div class="page-header__actions">
+            <span class="badge badge--info" id="formModeBadge">Mode: Registrasi Baru</span>
+            <a href="./data-master.html" class="btn btn--glass">← Kembali ke Direktori</a>
+          </div>
+        </section>
+
+        <form id="employeeForm" novalidate style="display:flex;flex-direction:column;gap:22px;">
+          <input type="hidden" id="empId" />
+
+          <!-- SECTION 1: IDENTITAS PEGAWAI -->
+          <section class="glass-card">
+            <div class="section-head">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div class="avatar" id="liveAvatarPreview" style="width:46px;height:46px;font-size:1rem;">AU</div>
+                <div>
+                  <h2 class="section-head__title">1. Identitas Pegawai</h2>
+                  <p class="section-head__sub">Data personal dan kontak resmi perusahaan terdaftar.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group" id="grpNip">
+                <label for="empNip" class="form-label">Nomor Induk Pegawai (NIP) <span class="req">*</span></label>
+                <input type="text" id="empNip" class="form-control mono" placeholder="AUR-0306" required />
+                <span class="form-hint">Format standar: AUR- diikuti 4 digit angka (unik).</span>
+                <span class="form-error">Format NIP wajib seperti AUR-0306 dan belum terpakai.</span>
+              </div>
+
+              <div class="form-group" id="grpName">
+                <label for="empName" class="form-label">Nama Lengkap &amp; Gelar <span class="req">*</span></label>
+                <input type="text" id="empName" class="form-control" placeholder="Contoh: Dimas Arya Pratama, S.Kom" required />
+                <span class="form-hint">Sesuai KTP dan ijazah resmi.</span>
+                <span class="form-error">Nama lengkap wajib diisi (minimal 3 karakter).</span>
+              </div>
+
+              <div class="form-group" id="grpEmail">
+                <label for="empEmail" class="form-label">Email Kantor <span class="req">*</span></label>
+                <input type="email" id="empEmail" class="form-control" placeholder="nama.pegawai@aurahr.id" required />
+                <span class="form-hint">Gunakan alamat email aktif perusahaan.</span>
+                <span class="form-error">Masukkan format email valid (contoh: nama@aurahr.id).</span>
+              </div>
+
+              <div class="form-group" id="grpPhone">
+                <label for="empPhone" class="form-label">Nomor Telepon / WhatsApp <span class="req">*</span></label>
+                <input type="tel" id="empPhone" class="form-control mono" placeholder="0812-8899-1020" required />
+                <span class="form-hint">Digunakan untuk notifikasi OTP &amp; kontak darurat.</span>
+                <span class="form-error">Nomor telepon wajib minimal 9 digit angka.</span>
+              </div>
+
+              <div class="form-group form-group--full">
+                <label class="form-label">Jenis Kelamin</label>
+                <div class="radio-pill-group">
+                  <label class="radio-pill">
+                    <input type="radio" name="empGender" value="Laki-laki" checked />
+                    <span>Laki-laki</span>
+                  </label>
+                  <label class="radio-pill">
+                    <input type="radio" name="empGender" value="Perempuan" />
+                    <span>Perempuan</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 2: PENEMPATAN & KEPEGAWAIAN -->
+          <section class="glass-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-head__title">2. Penempatan &amp; Hubungan Kerja</h2>
+                <p class="section-head__sub">Divisi organisasi, peran jabatan, dan status keaktifan kontrak.</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group" id="grpDept">
+                <label for="empDept" class="form-label">Departemen <span class="req">*</span></label>
+                <select id="empDept" class="form-control" required>
+                  <option value="">— Pilih Departemen —</option>
+                  <option value="Engineering & Product">Engineering &amp; Product</option>
+                  <option value="Sales & Marketing">Sales &amp; Marketing</option>
+                  <option value="Operations & Logistik">Operations &amp; Logistik</option>
+                  <option value="Finance & Legal">Finance &amp; Legal</option>
+                  <option value="HR & General Affairs">HR &amp; General Affairs</option>
+                </select>
+                <span class="form-error">Silakan pilih departemen penempatan.</span>
+              </div>
+
+              <div class="form-group" id="grpPosition">
+                <label for="empPosition" class="form-label">Jabatan / Role <span class="req">*</span></label>
+                <input type="text" id="empPosition" class="form-control" placeholder="Contoh: Full-Stack Engineer" required />
+                <span class="form-error">Nama jabatan wajib diisi.</span>
+              </div>
+
+              <div class="form-group" id="grpJoinDate">
+                <label for="empJoinDate" class="form-label">Tanggal Mulai Bekerja <span class="req">*</span></label>
+                <input type="date" id="empJoinDate" class="form-control" required />
+                <span class="form-error">Tanggal mulai bekerja wajib dipilih.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Status Akun &amp; Presensi</label>
+                <div style="padding-top:6px;">
+                  <label class="switch-toggle">
+                    <input type="checkbox" id="empActive" checked />
+                    <span class="switch-toggle__track"></span>
+                    <span style="font-weight:600;">Karyawan Aktif (Terhubung ESS &amp; Payroll)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group form-group--full">
+                <label class="form-label">Status Hubungan Kerja</label>
+                <div class="radio-pill-group">
+                  <label class="radio-pill">
+                    <input type="radio" name="empContract" value="Tetap" checked />
+                    <span>Karyawan Tetap (PKWTT)</span>
+                  </label>
+                  <label class="radio-pill">
+                    <input type="radio" name="empContract" value="Kontrak" />
+                    <span>Kontrak (PKWT)</span>
+                  </label>
+                  <label class="radio-pill">
+                    <input type="radio" name="empContract" value="Probation" />
+                    <span>Probation (3 Bulan)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 3: KOMPENSASI & KALKULASI OTOMATIS -->
+          <section class="glass-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-head__title">3. Kompensasi &amp; Tunjangan Bulanan</h2>
+                <p class="section-head__sub">Paket remunerasi dihitung otomatis untuk estimasi Gross &amp; Take Home Pay.</p>
+              </div>
+            </div>
+
+            <div class="split-grid" style="align-items:center;">
+              <div class="form-grid" style="grid-template-columns:1fr;">
+                <div class="form-group" id="grpSalary">
+                  <label for="empSalary" class="form-label">Gaji Pokok Bulanan (Rp) <span class="req">*</span></label>
+                  <input type="number" id="empSalary" class="form-control mono" placeholder="12000000" min="1000000" step="100000" required />
+                  <span class="form-hint">Minimal Rp 1.000.000 (angka positif tanpa titik).</span>
+                  <span class="form-error">Gaji pokok wajib berupa angka minimal Rp 1.000.000.</span>
+                </div>
+
+                <div class="form-group" id="grpAllowance">
+                  <label for="empAllowance" class="form-label">Tunjangan Jabatan &amp; Operasional (Rp) <span class="req">*</span></label>
+                  <input type="number" id="empAllowance" class="form-control mono" placeholder="2500000" min="0" step="50000" value="2000000" required />
+                  <span class="form-error">Tunjangan tidak boleh bernilai negatif.</span>
+                </div>
+              </div>
+
+              <!-- LIVE REMUNERATION SUMMARY BOX -->
+              <div class="glass-card glass-card--elevated" style="background:linear-gradient(135deg, rgba(79,70,229,0.08), rgba(14,165,233,0.09));border-color:rgba(79,70,229,0.22);">
+                <p class="page-header__eyebrow">RINGKASAN REMUNERASI LIVE</p>
+                <div style="font-size:1.65rem;font-weight:800;color:var(--color-primary);margin:6px 0;" class="mono" id="liveGrossDisplay">Rp 2.000.000</div>
+                <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:14px;">Total Estimasi Bruto Bulanan (Gaji Pokok + Tunjangan)</p>
+
+                <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:8px 0;border-top:1px solid var(--border-subtle);">
+                  <span style="color:var(--text-secondary);">Potongan PPh21 &amp; BPJS (5%):</span>
+                  <strong class="mono" id="liveDeductionDisplay">-Rp 100.000</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.86rem;padding:8px 0;border-top:1px solid var(--border-subtle);">
+                  <span style="font-weight:700;">Estimasi Take Home Pay:</span>
+                  <strong class="mono" style="color:var(--status-success);" id="liveNetDisplay">Rp 1.900.000</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border-subtle);">
+              <a href="./data-master.html" class="btn btn--glass">Batal</a>
+              <button type="submit" class="btn btn--primary" id="submitFormBtn">Simpan Data Karyawan</button>
+            </div>
+          </section>
+        </form>
+      </main>
+
+      <footer class="app-footer">
+        <span>&copy; 2026 <strong>AuraHR Enterprise</strong> — Sistem Informasi Kepegawaian &amp; SDM Terpadu.</span>
+        <span>Formulir CRUD &amp; Real-time JS Validation</span>
+      </footer>
+    </div>
+  </div>
+
+  <script src="../assets/js/store.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get('id');
+
+      const fId = document.getElementById('empId');
+      const fNip = document.getElementById('empNip');
+      const fName = document.getElementById('empName');
+      const fEmail = document.getElementById('empEmail');
+      const fPhone = document.getElementById('empPhone');
+      const fDept = document.getElementById('empDept');
+      const fPos = document.getElementById('empPosition');
+      const fJoin = document.getElementById('empJoinDate');
+      const fActive = document.getElementById('empActive');
+      const fSalary = document.getElementById('empSalary');
+      const fAllowance = document.getElementById('empAllowance');
+
+      function updateRemunerationPreview() {
+        const base = Math.max(0, Number(fSalary.value) || 0);
+        const allow = Math.max(0, Number(fAllowance.value) || 0);
+        const gross = base + allow;
+        const deduct = Math.round(gross * 0.05);
+        const net = gross - deduct;
+
+        document.getElementById('liveGrossDisplay').textContent = AuraApp.formatRupiah(gross);
+        document.getElementById('liveDeductionDisplay').textContent = '-' + AuraApp.formatRupiah(deduct);
+        document.getElementById('liveNetDisplay').textContent = AuraApp.formatRupiah(net);
+      }
+
+      function initFormMode() {
+        if (editId) {
+          const emp = AuraStore.getEmployeeById(editId);
+          if (emp) {
+            fId.value = emp.id;
+            fNip.value = emp.nip;
+            fName.value = emp.name;
+            fEmail.value = emp.email;
+            fPhone.value = emp.phone || '';
+            fDept.value = emp.dept;
+            fPos.value = emp.position;
+            fJoin.value = emp.joinDate;
+            fActive.checked = emp.active !== false;
+            fSalary.value = emp.baseSalary;
+            fAllowance.value = emp.allowance || 0;
+
+            document.querySelectorAll('input[name="empGender"]').forEach(r => { r.checked = r.value === emp.gender; });
+            document.querySelectorAll('input[name="empContract"]').forEach(r => { r.checked = r.value === emp.contract; });
+
+            document.getElementById('formMainTitle').textContent = `Edit Profil Karyawan (${emp.nip})`;
+            document.getElementById('breadcrumbFormTitle').textContent = 'Edit Data Karyawan';
+            document.getElementById('formModeBadge').textContent = 'Mode: Pembaruan Data';
+            document.getElementById('submitFormBtn').textContent = 'Simpan Perubahan';
+            document.getElementById('liveAvatarPreview').textContent = AuraApp.initials(emp.name);
+          }
+        } else {
+          fNip.value = AuraStore.generateNextNip();
+          fJoin.value = new Date().toISOString().slice(0, 10);
+          fSalary.value = 10500000;
+          fAllowance.value = 2000000;
+        }
+        updateRemunerationPreview();
+      }
+
+      function setFieldState(groupId, inputEl, isValid, customErrorText) {
+        const grp = document.getElementById(groupId);
+        if (!grp) return isValid;
+        if (customErrorText) {
+          const errSpan = grp.querySelector('.form-error');
+          if (errSpan) errSpan.textContent = customErrorText;
+        }
+        grp.classList.toggle('has-error', !isValid);
+        inputEl.classList.toggle('is-invalid', !isValid);
+        inputEl.classList.toggle('is-valid', isValid);
+        return isValid;
+      }
+
+      function validateNip() {
+        const val = fNip.value.trim().toUpperCase();
+        const formatOk = /^AUR-\d{3,5}$/.test(val);
+        const duplicate = AuraStore.getEmployees().some(e => e.nip.toUpperCase() === val && e.id !== fId.value);
+        if (!formatOk) return setFieldState('grpNip', fNip, false, 'Format NIP wajib AUR- diikuti 3–5 digit angka.');
+        if (duplicate) return setFieldState('grpNip', fNip, false, 'Kode NIP sudah digunakan oleh pegawai lain.');
+        return setFieldState('grpNip', fNip, true);
+      }
+
+      function validateName() {
+        const ok = fName.value.trim().length >= 3;
+        document.getElementById('liveAvatarPreview').textContent = AuraApp.initials(fName.value || 'AU');
+        return setFieldState('grpName', fName, ok);
+      }
+
+      function validateEmail() {
+        const val = fEmail.value.trim();
+        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+        const duplicate = AuraStore.getEmployees().some(e => e.email.toLowerCase() === val.toLowerCase() && e.id !== fId.value);
+        if (!ok) return setFieldState('grpEmail', fEmail, false, 'Masukkan format email yang valid (contoh: nama@aurahr.id).');
+        if (duplicate) return setFieldState('grpEmail', fEmail, false, 'Alamat email sudah terdaftar pada pegawai lain.');
+        return setFieldState('grpEmail', fEmail, true);
+      }
+
+      function validatePhone() {
+        const digits = fPhone.value.replace(/\D/g, '');
+        return setFieldState('grpPhone', fPhone, digits.length >= 9);
+      }
+
+      function validateDept() { return setFieldState('grpDept', fDept, Boolean(fDept.value)); }
+      function validatePos() { return setFieldState('grpPosition', fPos, fPos.value.trim().length >= 2); }
+      function validateJoin() { return setFieldState('grpJoinDate', fJoin, Boolean(fJoin.value)); }
+      function validateSalary() { return setFieldState('grpSalary', fSalary, Number(fSalary.value) >= 1000000); }
+      function validateAllowance() { return setFieldState('grpAllowance', fAllowance, fAllowance.value !== '' && Number(fAllowance.value) >= 0); }
+
+      fNip.addEventListener('input', validateNip);
+      fName.addEventListener('input', validateName);
+      fEmail.addEventListener('input', validateEmail);
+      fPhone.addEventListener('input', validatePhone);
+      fDept.addEventListener('change', validateDept);
+      fPos.addEventListener('input', validatePos);
+      fJoin.addEventListener('change', validateJoin);
+      fSalary.addEventListener('input', () => { validateSalary(); updateRemunerationPreview(); });
+      fAllowance.addEventListener('input', () => { validateAllowance(); updateRemunerationPreview(); });
+
+      document.getElementById('employeeForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const checks = [
+          validateNip(),
+          validateName(),
+          validateEmail(),
+          validatePhone(),
+          validateDept(),
+          validatePos(),
+          validateJoin(),
+          validateSalary(),
+          validateAllowance()
+        ];
+
+        if (checks.includes(false)) {
+          AuraApp.showToast('Mohon periksa kembali kolom yang bertanda merah.', 'danger');
+          return;
+        }
+
+        const gender = document.querySelector('input[name="empGender"]:checked').value;
+        let contract = document.querySelector('input[name="empContract"]:checked').value;
+        if (!fActive.checked) contract = 'Nonaktif';
+
+        const payload = {
+          nip: fNip.value.trim().toUpperCase(),
+          name: fName.value.trim(),
+          email: fEmail.value.trim(),
+          phone: fPhone.value.trim(),
+          gender,
+          dept: fDept.value,
+          position: fPos.value.trim(),
+          joinDate: fJoin.value,
+          active: fActive.checked,
+          contract,
+          baseSalary: Number(fSalary.value),
+          allowance: Number(fAllowance.value)
+        };
+        if (fId.value) payload.id = fId.value;
+        const result = AuraStore.saveEmployee(payload);
+
+        AuraApp.showToast(
+          result.mode === 'edit'
+            ? `Data ${result.employee.name} berhasil diperbarui!`
+            : `Pegawai baru ${result.employee.name} berhasil ditambahkan!`,
+          'success'
+        );
+
+        setTimeout(() => {
+          window.location.href = './data-master.html';
+        }, 550);
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const depts = AuraStore.getDepartmentsWithCounts();
+        fDept.innerHTML = '<option value="">— Pilih Departemen —</option>' + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+        initFormMode();
+      });
+    })();
+  </script>
+</body>
+</html>

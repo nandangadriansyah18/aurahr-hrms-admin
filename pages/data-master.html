@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Master Karyawan — AuraHR Enterprise</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234F46E5'/%3E%3Cpath d='M16 6L6 11l10 5 10-5-10-5zM6 21l10 5 10-5M6 16l10 5 10-5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body data-base=".." data-page="data-master">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div class="sidebar__brand-text">
+          <span class="sidebar__brand-title">AuraHR</span>
+          <span class="sidebar__brand-sub">HR Intelligence Suite</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav" id="sidebarNavContainer"></nav>
+
+      <div class="sidebar__footer">
+        <div class="cutoff-widget">
+          <div class="cutoff-widget__label">Cutoff Payroll</div>
+          <div class="cutoff-widget__date">25 Nov 2026 • 4 Hari Lagi</div>
+          <div class="cutoff-widget__bar"><div class="cutoff-widget__fill"></div></div>
+        </div>
+        <button type="button" class="btn btn--glass" data-action="logout" style="width:100%;justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Keluar Sesi</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar__left">
+          <button type="button" class="topbar__toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span>Kepegawaian</span><span>/</span><span class="breadcrumb__current">Data Master Karyawan</span>
+          </nav>
+        </div>
+
+        <div class="topbar__center">
+          <div class="global-search">
+            <svg class="global-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="globalSearchInput" class="global-search__input" placeholder="Cari NIP atau nama karyawan..." autocomplete="off" />
+            <span class="global-search__kbd">Ctrl+K</span>
+          </div>
+          <div class="search-results-dropdown" id="globalSearchDropdown"></div>
+        </div>
+
+        <div class="topbar__right">
+          <button type="button" class="notif-btn" id="topbarNotifBtn" aria-label="Notifikasi">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-btn__dot" id="topbarNotifCount">0</span>
+          </button>
+          <div class="user-pill">
+            <div class="avatar" id="topbarUserAvatar">SR</div>
+            <div class="user-pill__info">
+              <span class="user-pill__name" id="topbarUserName">Siti Rahmawati</span>
+              <span class="user-pill__role" id="topbarUserRole">Role: HR Management</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-area">
+        <section class="page-header">
+          <div>
+            <p class="page-header__eyebrow" id="directoryCountLabel">02 / DIREKTORI PEGAWAI TERDAFTAR</p>
+            <h1 class="page-header__title">Data Master Karyawan</h1>
+            <p class="page-header__subtitle">Kelola direktori pegawai, penempatan divisi, status hubungan kerja, dan kompensasi gaji pokok.</p>
+          </div>
+          <div class="page-header__actions">
+            <button type="button" class="btn btn--glass" id="exportEmployeesCsvBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export CSV</span>
+            </button>
+            <a href="./form.html" class="btn btn--primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Tambah Karyawan</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- GLASS FILTER BAR -->
+        <section class="glass-card filter-bar" aria-label="Filter Data Karyawan">
+          <div class="filter-bar__search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="tableSearchInput" class="form-control" placeholder="Cari NIP, nama lengkap, jabatan, atau email..." />
+          </div>
+
+          <select id="deptFilterSelect" class="form-control" style="width:auto;min-width:195px;" aria-label="Filter Departemen">
+            <option value="">Semua Departemen</option>
+            <option value="Engineering & Product">Engineering &amp; Product</option>
+            <option value="Sales & Marketing">Sales &amp; Marketing</option>
+            <option value="Operations & Logistik">Operations &amp; Logistik</option>
+            <option value="Finance & Legal">Finance &amp; Legal</option>
+            <option value="HR & General Affairs">HR &amp; General Affairs</option>
+          </select>
+
+          <select id="statusFilterSelect" class="form-control" style="width:auto;min-width:170px;" aria-label="Filter Status Kontrak">
+            <option value="">Semua Status</option>
+            <option value="Tetap">Tetap</option>
+            <option value="Kontrak">Kontrak (PKWT)</option>
+            <option value="Probation">Probation</option>
+            <option value="Nonaktif">Nonaktif</option>
+          </select>
+
+          <button type="button" class="btn btn--glass" id="resetFilterBtn">Reset Filter</button>
+        </section>
+
+        <!-- FROSTED GLASS DATA TABLE -->
+        <section class="glass-card">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>NIP</th>
+                  <th>Karyawan</th>
+                  <th>Departemen</th>
+                  <th>Jabatan</th>
+                  <th>Status Kontrak</th>
+                  <th>Tanggal Masuk</th>
+                  <th>Gaji Pokok</th>
+                  <th style="text-align:right;">Aksi CRUD</th>
+                </tr>
+              </thead>
+              <tbody id="employeeTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <span id="paginationSummary">Menampilkan 0 karyawan</span>
+            <div class="pagination" id="paginationControls"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>&copy; 2026 <strong>AuraHR Enterprise</strong> — Sistem Informasi Kepegawaian &amp; SDM Terpadu.</span>
+        <span>Modul Data Master CRUD • Client-Side Persistence</span>
+      </footer>
+    </div>
+  </div>
+
+  <script src="../assets/js/store.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    (function () {
+      const PAGE_SIZE = 7;
+      let currentPage = 1;
+
+      const searchEl = document.getElementById('tableSearchInput');
+      const deptEl = document.getElementById('deptFilterSelect');
+      const statusEl = document.getElementById('statusFilterSelect');
+      const tbody = document.getElementById('employeeTableBody');
+
+      // Pre-populate search from URL query ?q=
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('q')) {
+        searchEl.value = params.get('q');
+      }
+
+      function getFilteredEmployees() {
+        const q = searchEl.value.trim().toLowerCase();
+        const dept = deptEl.value;
+        const status = statusEl.value;
+
+        return AuraStore.getEmployees().filter(emp => {
+          const matchQ = !q ||
+            emp.nip.toLowerCase().includes(q) ||
+            emp.name.toLowerCase().includes(q) ||
+            emp.email.toLowerCase().includes(q) ||
+            emp.position.toLowerCase().includes(q);
+          const matchDept = !dept || emp.dept === dept;
+          const matchStatus = !status || emp.contract === status;
+          return matchQ && matchDept && matchStatus;
+        });
+      }
+
+      function renderTable() {
+        const all = AuraStore.getEmployees();
+        document.getElementById('directoryCountLabel').textContent = `02 / DIREKTORI PEGAWAI • ${all.length} KARYAWAN TERDAFTAR`;
+
+        const filtered = getFilteredEmployees();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const startIdx = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+
+        if (pageItems.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-secondary);">Tidak ada karyawan yang sesuai dengan kriteria pencarian/filter.</td></tr>`;
+        } else {
+          tbody.innerHTML = pageItems.map(emp => `
+            <tr>
+              <td class="mono" style="font-weight:700;color:var(--color-primary);">${emp.nip}</td>
+              <td>
+                <div class="emp-cell">
+                  <div class="avatar">${AuraApp.initials(emp.name)}</div>
+                  <div>
+                    <div class="emp-cell__name">${emp.name}</div>
+                    <div class="emp-cell__email">${emp.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${emp.dept}</td>
+              <td>${emp.position}</td>
+              <td>${AuraApp.contractBadge(emp.contract)}</td>
+              <td>${AuraApp.formatDateIndo(emp.joinDate)}</td>
+              <td class="mono" style="font-weight:600;">${AuraApp.formatRupiah(emp.baseSalary)}</td>
+              <td>
+                <div style="display:flex;justify-content:flex-end;gap:6px;">
+                  <button type="button" class="btn btn--icon" title="Lihat Detail Profil" data-detail-id="${emp.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <a href="./form.html?id=${encodeURIComponent(emp.id)}" class="btn btn--icon" title="Edit Karyawan">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </a>
+                  <button type="button" class="btn btn--icon btn--icon-danger" title="Hapus Karyawan" data-delete-id="${emp.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        const from = filtered.length === 0 ? 0 : startIdx + 1;
+        const to = Math.min(startIdx + PAGE_SIZE, filtered.length);
+        document.getElementById('paginationSummary').textContent = `Menampilkan ${from}–${to} dari ${filtered.length} karyawan`;
+
+        // Pagination buttons
+        const pagEl = document.getElementById('paginationControls');
+        let pagHtml = `<button type="button" class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>`;
+        for (let p = 1; p <= totalPages; p++) {
+          pagHtml += `<button type="button" class="page-btn ${p === currentPage ? 'is-active' : ''}" data-page="${p}">${p}</button>`;
+        }
+        pagHtml += `<button type="button" class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Next ›</button>`;
+        pagEl.innerHTML = pagHtml;
+
+        pagEl.querySelectorAll('[data-page]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const next = Number(btn.dataset.page);
+            if (next >= 1 && next <= totalPages) {
+              currentPage = next;
+              renderTable();
+            }
+          });
+        });
+
+        // Detail Modal Action
+        tbody.querySelectorAll('[data-detail-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const emp = AuraStore.getEmployeeById(btn.dataset.detailId);
+            if (!emp) return;
+            const gross = Number(emp.baseSalary || 0) + Number(emp.allowance || 0);
+            AuraApp.openModal({
+              title: 'Detail Profil Karyawan',
+              bodyHtml: `
+                <div style="display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--border-subtle);margin-bottom:14px;">
+                  <div class="avatar" style="width:48px;height:48px;font-size:1rem;">${AuraApp.initials(emp.name)}</div>
+                  <div>
+                    <div style="font-weight:800;font-size:1.05rem;">${emp.name}</div>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);">${emp.position} • ${emp.dept}</div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.83rem;">
+                  <div><span style="color:var(--text-secondary);">NIP:</span><br><strong class="mono">${emp.nip}</strong></div>
+                  <div><span style="color:var(--text-secondary);">Status Kontrak:</span><br>${AuraApp.contractBadge(emp.contract)}</div>
+                  <div><span style="color:var(--text-secondary);">Email Kantor:</span><br><strong>${emp.email}</strong></div>
+                  <div><span style="color:var(--text-secondary);">No. Telepon:</span><br><strong>${emp.phone || '-'}</strong></div>
+                  <div><span style="color:var(--text-secondary);">Tanggal Masuk:</span><br><strong>${AuraApp.formatDateIndo(emp.joinDate)}</strong></div>
+                  <div><span style="color:var(--text-secondary);">Total Remunerasi Gross:</span><br><strong class="mono" style="color:var(--color-primary);">${AuraApp.formatRupiah(gross)}</strong></div>
+                </div>
+              `,
+              confirmText: 'Edit Data Ini',
+              cancelText: 'Tutup',
+              onConfirm: () => {
+                window.location.href = `./form.html?id=${encodeURIComponent(emp.id)}`;
+              }
+            });
+          });
+        });
+
+        // Delete Confirmation Modal Action
+        tbody.querySelectorAll('[data-delete-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const emp = AuraStore.getEmployeeById(btn.dataset.deleteId);
+            if (!emp) return;
+            AuraApp.openModal({
+              title: 'Konfirmasi Hapus Data Pegawai',
+              bodyHtml: `
+                <p style="color:var(--text-secondary);">Apakah Anda yakin ingin menghapus data pegawai berikut dari sistem?</p>
+                <div style="margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--status-danger-bg);color:#991B1B;font-weight:600;">
+                  ${emp.name} (${emp.nip}) — ${emp.position}
+                </div>
+              `,
+              confirmText: 'Ya, Hapus Permanen',
+              confirmClass: 'btn--danger',
+              onConfirm: () => {
+                AuraStore.deleteEmployee(emp.id);
+                AuraApp.showToast(`Data ${emp.name} telah dihapus.`, 'danger');
+                renderTable();
+              }
+            });
+          });
+        });
+      }
+
+      searchEl.addEventListener('input', () => {
+        currentPage = 1;
+        renderTable();
+      });
+
+      [deptEl, statusEl].forEach(el => {
+        el.addEventListener('change', () => {
+          currentPage = 1;
+          renderTable();
+        });
+      });
+
+      document.getElementById('resetFilterBtn').addEventListener('click', () => {
+        searchEl.value = '';
+        deptEl.value = '';
+        statusEl.value = '';
+        currentPage = 1;
+        renderTable();
+      });
+
+      document.getElementById('exportEmployeesCsvBtn').addEventListener('click', () => {
+        const emps = getFilteredEmployees();
+        const rows = [
+          ['NIP', 'Nama Lengkap', 'Email', 'No Telepon', 'Departemen', 'Jabatan', 'Status Kontrak', 'Tanggal Masuk', 'Gaji Pokok', 'Tunjangan'],
+          ...emps.map(e => [e.nip, `"${e.name}"`, e.email, e.phone || '-', `"${e.dept}"`, `"${e.position}"`, e.contract, e.joinDate, e.baseSalary, e.allowance || 0])
+        ];
+        const csv = 'data:text/csv;charset=utf-8,' + rows.map(r => r.join(',')).join('\n');
+        const a = document.createElement('a');
+        a.href = encodeURI(csv);
+        a.download = 'Data-Karyawan-AuraHR.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        AuraApp.showToast(`Berhasil mengekspor ${emps.length} data karyawan ke CSV.`, 'success');
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const depts = AuraStore.getDepartmentsWithCounts();
+        deptEl.innerHTML = '<option value="">Semua Departemen</option>' + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+        renderTable();
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manajemen Role (RBAC) &amp; Departemen — AuraHR Enterprise</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234F46E5'/%3E%3Cpath d='M16 6L6 11l10 5 10-5-10-5zM6 21l10 5 10-5M6 16l10 5 10-5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body data-base=".." data-page="rbac">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div class="sidebar__brand-text">
+          <span class="sidebar__brand-title">AuraHR</span>
+          <span class="sidebar__brand-sub">Enterprise Governance</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav" id="sidebarNavContainer"></nav>
+
+      <div class="sidebar__footer">
+        <div class="cutoff-widget">
+          <div class="cutoff-widget__label">Security Enclave</div>
+          <div class="cutoff-widget__date">RBAC Policy v4.1 Active</div>
+          <div class="cutoff-widget__bar"><div class="cutoff-widget__fill" style="width:100%;"></div></div>
+        </div>
+        <button type="button" class="btn btn--glass" data-action="logout" style="width:100%;justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Keluar Sesi</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar__left">
+          <button type="button" class="topbar__toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span>Sistem &amp; Organisasi</span><span>/</span><span class="breadcrumb__current">Manajemen Role &amp; Divisi</span>
+          </nav>
+        </div>
+
+        <div class="topbar__right" style="margin-left:auto;">
+          <div class="user-pill">
+            <div class="avatar" id="topbarUserAvatar">AP</div>
+            <div class="user-pill__info">
+              <span class="user-pill__name" id="topbarUserName">Arya Pratama</span>
+              <span class="user-pill__role" id="topbarUserRole">Role: Super Admin</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-area">
+        <div id="rbacGuardBanner" style="display:none;padding:14px 18px;border-radius:14px;background:var(--status-warning-bg);border:1px solid rgba(245,158,11,0.35);align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <span style="font-weight:600;color:#92400E;">Anda sedang melihat halaman Governance Super Admin menggunakan peran non-Super Admin.</span>
+          <button type="button" class="btn btn--sm btn--primary" id="elevateSuperAdminBtn">Aktifkan Role Super Admin</button>
+        </div>
+
+        <section class="page-header">
+          <div>
+            <p class="page-header__eyebrow" style="color:var(--color-violet);">05 / MODUL TATA KELOLA SUPER ADMIN (RBAC)</p>
+            <h1 class="page-header__title">Manajemen Hak Akses &amp; Master Departemen</h1>
+            <p class="page-header__subtitle">Atur pembagian peran akses pengguna (<strong>Super Admin</strong>, <strong>HR Management</strong>, <strong>Karyawan ESS</strong>) serta alokasi kuota formasi divisi.</p>
+          </div>
+          <div class="page-header__actions">
+            <button type="button" class="btn btn--glass" id="addDeptModalBtn">+ Tambah Departemen</button>
+            <button type="button" class="btn btn--primary" id="addAccountModalBtn">+ Tambah Akun Akses</button>
+          </div>
+        </section>
+
+        <!-- 3 RBAC SUMMARY CARDS -->
+        <section class="kpi-grid kpi-grid--3">
+          <article class="glass-card stat-card">
+            <div class="stat-card__top">
+              <span class="stat-card__label">Super Admin</span>
+              <span class="badge badge--role-admin">Akses Penuh Sistem</span>
+            </div>
+            <div class="stat-card__value" id="countAdminRole">0 Akun</div>
+            <div class="stat-card__meta" style="color:var(--text-secondary);">Konfigurasi RBAC, keamanan &amp; organisasi</div>
+          </article>
+
+          <article class="glass-card stat-card">
+            <div class="stat-card__top">
+              <span class="stat-card__label">HR Management</span>
+              <span class="badge badge--role-hr">Operasional SDM</span>
+            </div>
+            <div class="stat-card__value" id="countHrRole">0 Akun</div>
+            <div class="stat-card__meta" style="color:var(--text-secondary);">CRUD pegawai, approval cuti &amp; laporan payroll</div>
+          </article>
+
+          <article class="glass-card stat-card">
+            <div class="stat-card__top">
+              <span class="stat-card__label">Portal Karyawan (ESS)</span>
+              <span class="badge badge--role-ess">Self-Service</span>
+            </div>
+            <div class="stat-card__value" id="countEssRole">0 Akun</div>
+            <div class="stat-card__meta" style="color:var(--text-secondary);">Presensi harian, ajukan cuti &amp; e-slip gaji</div>
+          </article>
+        </section>
+
+        <!-- TWO COLUMN SPLIT: ACCOUNTS TABLE + DEPARTMENTS QUOTA -->
+        <section class="rbac-grid">
+          <article class="glass-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-head__title">Daftar Akun Pengguna &amp; Hak Akses</h2>
+                <p class="section-head__sub">Ubah peran akses atau nonaktifkan sesi akun secara real-time.</p>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nama &amp; Email Login</th>
+                    <th>NIP</th>
+                    <th>Role Akses</th>
+                    <th>Login Terakhir</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Keamanan</th>
+                  </tr>
+                </thead>
+                <tbody id="accountsTbody"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="glass-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-head__title">Master Departemen &amp; Formasi</h2>
+                <p class="section-head__sub">Keterisian kuota pegawai aktif per divisi</p>
+              </div>
+            </div>
+
+            <div id="deptQuotaContainer" style="display:flex;flex-direction:column;gap:14px;"></div>
+          </article>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>&copy; 2026 <strong>AuraHR Enterprise</strong> — Governance &amp; Security Module.</span>
+        <span>Role-Based Access Control (RBAC)</span>
+      </footer>
+    </div>
+  </div>
+
+  <script src="../assets/js/store.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    (function () {
+      function renderRbacPage() {
+        const session = AuraStore.getSession();
+        const banner = document.getElementById('rbacGuardBanner');
+        banner.style.display = session.role !== 'SUPER_ADMIN' ? 'flex' : 'none';
+
+        const accounts = AuraStore.getAccounts();
+        document.getElementById('countAdminRole').textContent = accounts.filter(a => a.role === 'SUPER_ADMIN').length + ' Akun';
+        document.getElementById('countHrRole').textContent = accounts.filter(a => a.role === 'HR').length + ' Akun';
+        document.getElementById('countEssRole').textContent = accounts.filter(a => a.role === 'KARYAWAN').length + ' Akun';
+
+        const tbody = document.getElementById('accountsTbody');
+        tbody.innerHTML = accounts.map(acc => `
+          <tr>
+            <td>
+              <div class="emp-cell">
+                <div class="avatar">${AuraApp.initials(acc.name)}</div>
+                <div>
+                  <div class="emp-cell__name">${acc.name}</div>
+                  <div class="emp-cell__email">${acc.email}</div>
+                </div>
+              </div>
+            </td>
+            <td class="mono" style="font-weight:700;color:var(--color-primary);">${acc.nip}</td>
+            <td>
+              <select class="form-control" style="padding:6px 10px;font-size:0.78rem;font-weight:700;width:auto;" data-role-select="${acc.id}">
+                <option value="SUPER_ADMIN" ${acc.role === 'SUPER_ADMIN' ? 'selected' : ''}>Super Admin</option>
+                <option value="HR" ${acc.role === 'HR' ? 'selected' : ''}>HR Management</option>
+                <option value="KARYAWAN" ${acc.role === 'KARYAWAN' ? 'selected' : ''}>Portal Karyawan</option>
+              </select>
+            </td>
+            <td style="font-size:0.78rem;color:var(--text-secondary);">${acc.lastLogin}</td>
+            <td>
+              <label class="switch-toggle">
+                <input type="checkbox" data-acc-toggle="${acc.id}" ${acc.active ? 'checked' : ''} />
+                <span class="switch-toggle__track"></span>
+              </label>
+            </td>
+            <td style="text-align:right;">
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <button type="button" class="btn btn--sm btn--glass" data-reset-pwd="${acc.id}">Reset Sandi</button>
+                ${acc.id !== session.id ? `
+                  <button type="button" class="btn btn--icon btn--icon-danger" title="Hapus Akun" data-del-acc="${acc.id}">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('[data-del-acc]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const acc = accounts.find(a => a.id === btn.dataset.delAcc);
+            if (!acc) return;
+            AuraApp.openModal({
+              title: 'Konfirmasi Hapus Akun',
+              bodyHtml: `<p style="color:var(--text-secondary);">Hapus akses login untuk <strong>${acc.name}</strong> (<span class="mono">${acc.nip}</span>)?</p>`,
+              confirmText: 'Ya, Hapus Akun',
+              confirmClass: 'btn--danger',
+              onConfirm: () => {
+                AuraStore.deleteAccount(acc.id);
+                AuraApp.showToast(`Akun ${acc.name} berhasil dihapus.`, 'danger');
+                renderRbacPage();
+              }
+            });
+          });
+        });
+
+        tbody.querySelectorAll('[data-reset-pwd]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const acc = accounts.find(a => a.id === btn.dataset.resetPwd);
+            if (!acc) return;
+            AuraApp.openModal({
+              title: `Reset Kata Sandi — ${acc.name}`,
+              bodyHtml: `
+                <div class="form-group">
+                  <label class="form-label">Kata Sandi Baru</label>
+                  <input type="text" id="resetPwdInput" class="form-control mono" value="password123" />
+                  <span class="form-hint">Minimal 4 karakter. User dapat login ulang dengan sandi baru.</span>
+                </div>
+              `,
+              confirmText: 'Simpan Sandi Baru',
+              onConfirm: () => {
+                const newPwd = document.getElementById('resetPwdInput').value.trim();
+                if (newPwd.length < 4) {
+                  AuraApp.showToast('Kata sandi minimal 4 karakter.', 'danger');
+                  return false;
+                }
+                AuraStore.resetAccountPassword(acc.id, newPwd);
+                AuraApp.showToast(`Kata sandi ${acc.name} berhasil direset.`, 'success');
+              }
+            });
+          });
+        });
+
+        tbody.querySelectorAll('[data-role-select]').forEach(sel => {
+          sel.addEventListener('change', () => {
+            const updated = AuraStore.updateAccountRole(sel.dataset.roleSelect, sel.value);
+            AuraApp.showToast(`Peran akses ${updated.name} diubah menjadi ${sel.value}`, 'success');
+            renderRbacPage();
+          });
+        });
+
+        tbody.querySelectorAll('[data-acc-toggle]').forEach(chk => {
+          chk.addEventListener('change', () => {
+            const updated = AuraStore.toggleAccountActive(chk.dataset.accToggle);
+            AuraApp.showToast(
+              `Akun ${updated.name} ${updated.active ? 'diaktifkan' : 'dinonaktifkan'}.`,
+              updated.active ? 'success' : 'warning'
+            );
+            renderRbacPage();
+          });
+        });
+
+        // Render Departments Quota
+        const depts = AuraStore.getDepartmentsWithCounts();
+        const deptContainer = document.getElementById('deptQuotaContainer');
+        deptContainer.innerHTML = depts.map(d => {
+          const pct = Math.min(100, Math.round((d.headcount / Math.max(1, d.quota)) * 100));
+          return `
+            <div style="padding:14px 16px;border-radius:14px;background:rgba(255,255,255,0.72);border:1px solid var(--border-subtle);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px;">
+                <strong style="font-size:0.86rem;">${d.name}</strong>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button type="button" class="btn btn--sm btn--glass mono" data-quota-id="${d.id}" data-quota-val="${d.quota}">${d.headcount} / ${d.quota} Kuota ✎</button>
+                  ${d.headcount === 0 ? `<button type="button" class="btn btn--icon btn--icon-danger" style="width:28px;height:28px;" title="Hapus Departemen Kosong" data-del-dept="${d.id}">✕</button>` : ''}
+                </div>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text-secondary);margin-top:6px;">
+                <span>Lead: ${d.head}</span>
+                <span>${pct}% Terisi</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        deptContainer.querySelectorAll('[data-del-dept]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const deptId = btn.dataset.delDept;
+            AuraStore.deleteDepartment(deptId);
+            AuraApp.showToast(`Departemen ${deptId} dihapus.`, 'warning');
+            renderRbacPage();
+          });
+        });
+
+        deptContainer.querySelectorAll('[data-quota-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const deptId = btn.dataset.quotaId;
+            const curVal = btn.dataset.quotaVal;
+            AuraApp.openModal({
+              title: `Ubah Kuota Formasi (${deptId})`,
+              bodyHtml: `
+                <div class="form-group">
+                  <label class="form-label">Batas Kuota Maksimal Pegawai</label>
+                  <input type="number" id="modalQuotaInput" class="form-control mono" min="1" max="500" value="${curVal}" />
+                </div>
+              `,
+              confirmText: 'Simpan Kuota',
+              onConfirm: () => {
+                const v = Number(document.getElementById('modalQuotaInput').value);
+                if (v < 1) return false;
+                AuraStore.updateDepartmentQuota(deptId, v);
+                AuraApp.showToast('Kuota formasi departemen diperbarui!', 'success');
+                renderRbacPage();
+              }
+            });
+          });
+        });
+      }
+
+      document.getElementById('elevateSuperAdminBtn').addEventListener('click', () => {
+        AuraStore.switchRoleQuick('SUPER_ADMIN');
+        AuraApp.initShell();
+        renderRbacPage();
+        AuraApp.showToast('Sesi Super Admin diaktifkan!', 'success');
+      });
+
+      document.getElementById('addAccountModalBtn').addEventListener('click', () => {
+        AuraApp.openModal({
+          title: 'Tambah Akun Akses Baru',
+          bodyHtml: `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="form-group">
+                <label class="form-label">NIP Pegawai</label>
+                <input type="text" id="newAccNip" class="form-control mono" value="${AuraStore.generateNextNip()}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nama Pengguna</label>
+                <input type="text" id="newAccName" class="form-control" placeholder="Contoh: Rina Maharani" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email Login</label>
+                <input type="email" id="newAccEmail" class="form-control" placeholder="rina.maharani@aurahr.id" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Role Hak Akses</label>
+                <select id="newAccRole" class="form-control">
+                  <option value="KARYAWAN">Portal Karyawan (ESS)</option>
+                  <option value="HR">HR Management</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                </select>
+              </div>
+            </div>
+          `,
+          confirmText: 'Buat Akun',
+          onConfirm: () => {
+            const name = document.getElementById('newAccName').value.trim();
+            const email = document.getElementById('newAccEmail').value.trim();
+            const nip = document.getElementById('newAccNip').value.trim().toUpperCase();
+            const role = document.getElementById('newAccRole').value;
+            if (!name || !email.includes('@') || !/^AUR-\d{3,5}$/.test(nip)) {
+              AuraApp.showToast('NIP (AUR-XXXX), nama, dan email valid wajib diisi!', 'danger');
+              return false;
+            }
+            const res = AuraStore.addAccount({ nip, name, email, role });
+            if (!res.ok) {
+              AuraApp.showToast(res.message, 'danger');
+              return false;
+            }
+            AuraApp.showToast(`Akun ${name} (${role}) berhasil ditambahkan!`, 'success');
+            renderRbacPage();
+          }
+        });
+      });
+
+      document.getElementById('addDeptModalBtn').addEventListener('click', () => {
+        AuraApp.openModal({
+          title: 'Tambah Departemen / Divisi Baru',
+          bodyHtml: `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="form-group">
+                <label class="form-label">Kode Divisi (2–5 Huruf)</label>
+                <input type="text" id="newDeptCode" class="form-control mono" placeholder="MKT" maxlength="5" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nama Departemen</label>
+                <input type="text" id="newDeptName" class="form-control" placeholder="Contoh: Product &amp; Research" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Kepala Divisi</label>
+                <input type="text" id="newDeptHead" class="form-control" placeholder="Nama Lead / Manajer" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Kuota Formasi Pegawai</label>
+                <input type="number" id="newDeptQuota" class="form-control mono" min="1" value="10" />
+              </div>
+            </div>
+          `,
+          confirmText: 'Simpan Departemen',
+          onConfirm: () => {
+            const code = document.getElementById('newDeptCode').value.trim().toUpperCase();
+            const name = document.getElementById('newDeptName').value.trim();
+            const head = document.getElementById('newDeptHead').value.trim();
+            const quota = Number(document.getElementById('newDeptQuota').value);
+            if (!code || !name || !head || quota < 1) {
+              AuraApp.showToast('Semua data departemen wajib diisi lengkap!', 'danger');
+              return false;
+            }
+            AuraStore.addDepartment({ code, name, head, quota });
+            AuraApp.showToast(`Departemen ${name} (${code}) berhasil ditambahkan!`, 'success');
+            renderRbacPage();
+          }
+        });
+      });
+
+      document.addEventListener('DOMContentLoaded', renderRbacPage);
+    })();
+  </script>
+</body>
+</html>
