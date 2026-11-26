@@ -32,6 +32,8 @@ Proyek Tugas Mandiri **Pemrograman Web 2 (Client-Side Programming)** — Antarmu
 
 ## Struktur Direktori Proyek
 ```text
+├── database/
+│   └── aurahr_db.sql           # Skema MySQL/MariaDB + Seed Data Relasional (7 Tabel sesuai ERD)
 ├── docs/
 │   └── perancangan.md          # Milestone 1: Hirarki Menu, ERD, User Flow, Link & Screenshot Stitch/Figma
 ├── assets/
