@@ -246,7 +246,7 @@
 
                 if (!valid) return;
 
-                const res = AuraStore.login(idVal, pwdVal, selectedRole);
+                const res = AuraStore.login(idVal, pwdVal);
                 if (!res.ok) {
                     alertBox.textContent = res.message;
                     alertBox.style.display = 'block';
