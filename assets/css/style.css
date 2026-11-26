@@ -521,17 +521,6 @@ body.sidebar-collapsed .app-main {
   gap: 12px;
 }
 
-.role-switcher-select {
-  padding: 7px 12px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(79, 70, 229, 0.25);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 .notif-btn {
   position: relative;
   width: 38px;

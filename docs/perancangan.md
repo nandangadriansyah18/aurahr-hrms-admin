@@ -4,8 +4,10 @@
 - **Mata Kuliah:** Pemrograman Web 2 (Client-Side Programming)
 - **Topik Sistem:** #7 Aplikasi Kepegawaian & SDM (*Human Resource Management System* / HRMS)
 - **Arsitektur Pengguna:** **Multi-Role RBAC Client-Side** (*Super Admin*, *HR Management*, & *Portal Mandiri Karyawan / ESS*)
-- **Konsep Visual & Arsitektur UI:** **Modern Enterprise Glassmorphism**
-- **Teknologi Client-Side:** HTML5 Semantik, CSS3 Modern (*Custom Properties*, Flexbox, CSS Grid, `backdrop-filter`), Vanilla JavaScript (ES6+), Chart.js, & `localStorage` Multi-Role Persistence
+- **Konsep Visual & Arsitektur UI:** **Modern Enterprise Light Glassmorphism**
+- **Teknologi Client-Side:** HTML5 Semantik, CSS3 Modern (*Custom Properties*, Flexbox, CSS Grid, `backdrop-filter`, `@media print`), Vanilla JavaScript (ES6+), Chart.js v4, & `localStorage` Persistence
+- **Repository GitHub:** https://github.com/nandangadriansyah18/aurahr-hrms-admin
+- **Live Demo (GitHub Pages):** https://nandangadriansyah18.github.io/aurahr-hrms-admin/
 
 ---
 
@@ -15,7 +17,7 @@ Sebagai ekosistem *Human Resource Management System* (HRMS) yang utuh, **AuraHR*
 
 1. **Keterbacaan Data Tinggi (*High Data Legibility*):** Staf HR dan Super Admin memindai ratusan baris NIP, nama pegawai, departemen, hak akses role, status kontrak, dan nominal *payroll*. Efek *Glassmorphism* diterapkan secara presisi (*high-contrast frosted glass*) di atas tipografi gelap yang tajam agar mata tidak cepat lelah.
 2. **Integrasi Dua Arah HR ↔ Karyawan (*Connected Employee Self-Service*):** Karyawan dapat melakukan *Check-In/Check-Out* absensi harian, mengunduh slip gaji, serta mengajukan cuti melalui **Portal Karyawan (ESS)**—yang secara otomatis muncul *real-time* di antrean *Approval* pada **Dashboard HR**.
-3. ** Tata Kelola Akses Berjenjang (*Role-Based Access Control / RBAC*):** **Super Admin** memiliki kontrol khusus terhadap akun pengguna, penetapan role (`Super Admin`, `HR`, `Karyawan`), serta formasi kuota tiap departemen yang tidak dapat diubah sembarangan oleh pengguna biasa.
+3. **Tata Kelola Akses Berjenjang (*Role-Based Access Control / RBAC*):** **Super Admin** memiliki kontrol khusus terhadap akun pengguna, penetapan role (`Super Admin`, `HR`, `Karyawan`), reset kata sandi, serta formasi kuota tiap departemen yang tidak dapat diubah sembarangan oleh pengguna biasa.
 4. **Pencarian Instan & Pencegahan Kesalahan Input:** Direktori pegawai dilengkapi *live search* & filter multi-kriteria tanpa *reload* halaman, sedangkan form manipulasi data dilindungi *Validasi JavaScript Real-time* dan *Modal Konfirmasi Hapus*.
 
 ---
@@ -113,14 +115,14 @@ AuraHR Integrated HRMS (Multi-Role Web Application)
 
 | No | Nama Halaman | File Target | Role Akses | Komponen & Fitur Utama |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Portal Login Multi-Role** | `index.html` | Semua Role | Split-screen *frosted glass*, pemilih 3 Role (*Super Admin*, *HR*, *Karyawan*), chip akun demo 1-klik, validasi input, & *redirect* sesuai role. |
-| 2 | **Layout Master** | `layout.html` | Admin & HR | Kerangka dasar *reusable* berisi Sidebar responsif adaptif role, Sticky Header, *Main Content Area*, dan Footer (Output Milestone 2). |
-| 3 | **Dashboard SDM** | `pages/dashboard.html` | Admin & HR | 4 KPI Cards SDM, Grafik *Tren Kehadiran Bulanan* & *Distribusi Departemen* (Chart.js), serta tabel *Approval Cuti* interaktif (Setujui/Tolak kiriman dari Portal Karyawan). |
-| 4 | **Data Master Karyawan** | `pages/data-master.html` | Admin & HR | Live Search, Filter Departemen & Status Kontrak, Tabel Direktori Pegawai lengkap, Modal Detail Profil, Modal Konfirmasi Hapus, aksi Tambah/Edit. |
-| 5 | **Form Karyawan** | `pages/form.html` | Admin & HR | Mode ganda (*Tambah* & *Edit*), 3 seksi form (Identitas, Penempatan, Kompensasi + kalkulasi otomatis *Ringkasan Remunerasi*) dengan validasi JS real-time. |
-| 6 | **Laporan & Rekap SDM** | `pages/laporan.html` | Admin & HR | Filter periode bulan & departemen, 3 kartu ringkasan eksekutif, tabel konsolidasi kehadiran & *payroll* per divisi + blok pengesahan digital, tombol **Cetak Laporan (`window.print()`)**. |
-| 7 | **Portal Karyawan (ESS)** | `pages/portal-karyawan.html` | Karyawan | Jam digital *real-time* untuk *Check-In/Out* absensi, kuota cuti & slip gaji terakhir, form pengajuan cuti (langsung masuk ke Dashboard HR), & tabel status pengajuan pribadi. |
-| 8 | **Manajemen Role & Divisi** | `pages/manajemen-role.html` | Super Admin | 3 kartu ringkasan RBAC, tabel *Daftar Akun Pengguna & Hak Akses* (ubah role `SUPER_ADMIN`/`HR`/`KARYAWAN`, toggle status aktif, reset password), & panel *Master Departemen & Kuota Formasi*. |
+| 1 | **Portal Login Multi-Role** | `index.html` | Semua Role | Split-screen *frosted glass*, tab pemilih role, validasi kredensial ketat (Email/NIP + Password), akses cepat akun demo, & pengalihan rute otomatis sesuai role. |
+| 2 | **Template Dasar Workspace** | `layout.html` | Referensi M2 | Kerangka dasar *reusable* berisi Sidebar responsif (*collapsible* & *mobile drawer*), Sticky Header, *Main Content Area*, dan Footer. |
+| 3 | **Dashboard SDM** | `pages/dashboard.html` | Admin & HR | 4 KPI Cards SDM dinamis, Grafik *Tren Kehadiran Bulanan* & *Distribusi Departemen* (Chart.js), tabel *Approval Cuti* interaktif, & **Log Presensi Masuk/Keluar Karyawan**. |
+| 4 | **Data Master Karyawan** | `pages/data-master.html` | Admin & HR | Live Search, Filter Departemen & Status Kontrak, **Export CSV**, Tabel Direktori Pegawai lengkap, Glass Modal Detail Profil, Modal Konfirmasi Hapus, aksi Tambah/Edit. |
+| 5 | **Form Karyawan** | `pages/form.html` | Admin & HR | Mode ganda (*Tambah* & *Edit*), 3 seksi form (Identitas, Penempatan, Kompensasi + kalkulasi otomatis *Take Home Pay*), validasi JS real-time, & *auto-create* akun ESS. |
+| 6 | **Laporan & Rekap SDM** | `pages/laporan.html` | Admin & HR | Tab *Rekap Departemen* & *Rincian Slip Per Pegawai*, filter periode & departemen, **Export CSV** dinamis, blok pengesahan digital, & cetak **A4 Landscape (`window.print()`)**. |
+| 7 | **Portal Karyawan (ESS)** | `pages/portal-karyawan.html` | Karyawan | Menu terpisah *Beranda & Presensi* (Jam WIB *live*, Check-In/Out, KPI kehadiran dinamis, riwayat presensi), *Pengajuan Cuti & Izin* (terhubung ke Dashboard HR), & *Slip Gaji Digital* siap cetak. |
+| 8 | **Manajemen Role & Divisi** | `pages/manajemen-role.html` | Super Admin | 3 kartu ringkasan RBAC, tabel *Daftar Akun Pengguna* (ubah role, toggle aktif/nonaktif, **Reset Sandi**, **Hapus Akun**), & panel *Master Departemen* (tambah/hapus divisi & edit kuota). |
 
 ---
 
@@ -317,3 +319,17 @@ Agar rancangan di **Google Stitch**, komponen **Figma**, dan kode **CSS** seraga
 
 #### High-Fidelity UI — Halaman Data Master Karyawan (`pages/data-master.html`)
 ![Figma Hi-Fi Data Master](../assets/img/figma-hifi-datamaster.png)
+
+---
+
+## 8. Arsitektur Penyimpanan Data Client-Side (`localStorage`)
+
+Sesuai ketentuan tugas *Client-Side Programming*, seluruh persistensi data berjalan di sisi browser tanpa *back-end* server melalui modul `assets/js/store.js` (`AuraStore`):
+
+1. **Key Penyimpanan:**
+   - `aurahr_hrms_db_v1` — Menyimpan 5 koleksi data terstruktur (`departments`, `employees`, `leaveRequests`, `essAttendances`, `accounts`).
+   - `aurahr_active_session_v1` — Menyimpan sesi pengguna yang sedang login beserta hak akses *role*-nya (`SUPER_ADMIN`, `HR`, atau `KARYAWAN`).
+2. **Alur Sinkronisasi Lintas Role:**
+   - Karyawan melakukan **Check-In / Check-Out** atau **Ajukan Cuti** di `portal-karyawan.html` → tersimpan ke `localStorage` → langsung terbaca di **Dashboard HR** (`dashboard.html`) untuk dipantau & disetujui/ditolak.
+   - HR menambah pegawai baru di `form.html` → sistem otomatis membuatkan akun login Portal Karyawan di tabel `accounts`.
+   - Super Admin menambah departemen atau mengubah role/sandi di `manajemen-role.html` → langsung berlaku di proses login (`index.html`) dan pilihan departemen di seluruh halaman.
