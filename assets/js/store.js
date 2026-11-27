@@ -8,6 +8,50 @@
   const STORAGE_KEY = 'aurahr_hrms_db_v1';
   const SESSION_KEY = 'aurahr_active_session_v1';
 
+  function getApiUrl() {
+    const proto = window.location.protocol;
+    const host = window.location.hostname;
+    if (proto !== 'http:' && proto !== 'https:') return null;
+    if (host.endsWith('github.io') || host.endsWith('vercel.app')) return null;
+    const path = window.location.pathname.replace(/\\/g, '/');
+    return path.includes('/pages/') ? '../api/sync.php' : './api/sync.php';
+  }
+
+  let remoteEnabled = false;
+  let memoryCache = null;
+
+  function fetchInitialFromPhp() {
+    const url = getApiUrl();
+    if (!url) return null;
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url + '?t=' + Date.now(), false);
+      xhr.send(null);
+      if (xhr.status === 200 && xhr.getResponseHeader('Content-Type')?.includes('application/json')) {
+        const res = JSON.parse(xhr.responseText);
+        if (res && res.ok && res.db) {
+          remoteEnabled = true;
+          return res.db;
+        }
+      }
+    } catch (e) { /* Fallback to localStorage */ }
+    return null;
+  }
+
+  function pushToPhp(action, payload) {
+    if (!remoteEnabled) return;
+    const url = getApiUrl();
+    if (!url) return;
+    try {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload }),
+        keepalive: true
+      }).catch(() => {});
+    } catch (e) { /* ignore */ }
+  }
+
   const SEED_DATA = {
     departments: [
       { id: 'ENG', code: 'ENG', name: 'Engineering & Product', head: 'Arya Pratama, S.Kom', quota: 12 },
@@ -125,12 +169,22 @@
   }
 
   function loadDB() {
+    if (memoryCache) return memoryCache;
+
+    const remoteDb = fetchInitialFromPhp();
+    if (remoteDb) {
+      memoryCache = remoteDb;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteDb)); } catch (e) { /* ignore */ }
+      return memoryCache;
+    }
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
         const initial = clone(SEED_DATA);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-        return initial;
+        memoryCache = initial;
+        return memoryCache;
       }
       const parsed = JSON.parse(raw);
       let repaired = false;
@@ -142,14 +196,17 @@
           }
         });
       }
+      memoryCache = parsed;
       if (repaired) saveDB(parsed);
-      return parsed;
+      return memoryCache;
     } catch (e) {
-      return clone(SEED_DATA);
+      memoryCache = clone(SEED_DATA);
+      return memoryCache;
     }
   }
 
   function saveDB(db) {
+    memoryCache = db;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
   }
 
@@ -201,6 +258,7 @@
       };
       acc.lastLogin = 'Baru saja';
       saveDB(db);
+      pushToPhp('updateLastLogin', { id: acc.id });
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       return { ok: true, session };
     },
@@ -251,6 +309,7 @@
         if (idx !== -1) {
           db.employees[idx] = Object.assign({}, db.employees[idx], payload);
           saveDB(db);
+          pushToPhp('saveEmployee', db.employees[idx]);
           return { mode: 'edit', employee: db.employees[idx] };
         }
       }
@@ -279,6 +338,7 @@
       }
 
       saveDB(db);
+      pushToPhp('saveEmployee', newEmp);
       return { mode: 'create', employee: newEmp };
     },
 
@@ -286,6 +346,7 @@
       const db = loadDB();
       db.employees = db.employees.filter(e => e.id !== id);
       saveDB(db);
+      pushToPhp('deleteEmployee', { id });
     },
 
     /* ---------------- LEAVE REQUESTS (ESS <-> HR SYNC) ---------------- */
@@ -312,6 +373,7 @@
       };
       db.leaveRequests.unshift(item);
       saveDB(db);
+      pushToPhp('submitLeave', item);
       return item;
     },
 
@@ -321,6 +383,7 @@
       if (item) {
         item.status = status;
         saveDB(db);
+        pushToPhp('updateLeaveStatus', { id, status });
       }
       return item;
     },
@@ -344,6 +407,7 @@
           todayRec.dept = emp.dept;
         }
         saveDB(db);
+        pushToPhp('toggleCheckInOut', { action: 'checkout', nip, record: todayRec });
         return { action: 'checkout', record: todayRec };
       }
       const newRec = {
@@ -359,6 +423,7 @@
       };
       db.essAttendances.unshift(newRec);
       saveDB(db);
+      pushToPhp('toggleCheckInOut', { action: 'checkin', nip, record: newRec });
       return { action: 'checkin', record: newRec };
     },
 
@@ -373,6 +438,7 @@
       if (acc) {
         acc.role = newRole;
         saveDB(db);
+        pushToPhp('updateAccountRole', { id: accId, role: newRole });
       }
       return acc;
     },
@@ -383,6 +449,7 @@
       if (acc) {
         acc.active = !acc.active;
         saveDB(db);
+        pushToPhp('toggleAccountActive', { id: accId, active: acc.active });
       }
       return acc;
     },
@@ -410,6 +477,7 @@
       };
       db.accounts.unshift(acc);
       saveDB(db);
+      pushToPhp('addAccount', acc);
       return { ok: true, account: acc };
     },
 
@@ -417,12 +485,14 @@
       const db = loadDB();
       db.accounts = db.accounts.filter(a => a.id !== accId);
       saveDB(db);
+      pushToPhp('deleteAccount', { id: accId });
     },
 
     deleteDepartment(deptId) {
       const db = loadDB();
       db.departments = db.departments.filter(d => d.id !== deptId);
       saveDB(db);
+      pushToPhp('deleteDepartment', { id: deptId });
     },
 
     resetAccountPassword(accId, newPassword) {
@@ -431,6 +501,7 @@
       if (acc) {
         acc.password = String(newPassword || 'password123').trim();
         saveDB(db);
+        pushToPhp('resetAccountPassword', { id: accId, password: acc.password });
       }
       return acc;
     },
@@ -446,6 +517,7 @@
       };
       db.departments.push(dept);
       saveDB(db);
+      pushToPhp('addDepartment', dept);
       return dept;
     },
 
@@ -476,6 +548,7 @@
       if (d) {
         d.quota = Number(newQuota) || d.quota;
         saveDB(db);
+        pushToPhp('updateDepartmentQuota', { id: deptId, quota: d.quota });
       }
       return d;
     },
