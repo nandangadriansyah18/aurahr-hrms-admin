@@ -234,7 +234,9 @@
       const db = loadDB();
       const q = (identifier || '').trim().toLowerCase();
       const acc = db.accounts.find(a =>
-        a.email.toLowerCase() === q || a.nip.toLowerCase() === q
+        a.email.toLowerCase() === q ||
+        a.nip.toLowerCase() === q ||
+        a.name.toLowerCase() === q
       );
 
       if (!acc) {
