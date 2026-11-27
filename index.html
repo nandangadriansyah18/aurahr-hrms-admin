@@ -92,10 +92,10 @@
                 <div class="form-group" id="groupIdentity">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <label for="loginIdentifier" class="form-label">Email Kantor atau NIP <span class="req">*</span></label>
-                        <span class="mono" style="font-size:0.72rem;color:var(--color-primary);">Contoh: AUR-0021</span>
+                        <span class="mono" id="roleNipHint" style="font-size:0.72rem;color:var(--color-primary);">Format: AUR-XXXX</span>
                     </div>
-                    <input type="text" id="loginIdentifier" class="form-control" value="siti.rahma@aurahr.id" placeholder="nama@aurahr.id atau AUR-XXXX" required />
-                    <span class="form-error" id="errIdentity">Masukkan email @aurahr.id atau kode NIP yang valid.</span>
+                    <input type="text" id="loginIdentifier" class="form-control" placeholder="Masukkan email kantor atau NIP Anda" required />
+                    <span class="form-error" id="errIdentity">Masukkan email atau kode NIP yang valid.</span>
                 </div>
 
                 <div class="form-group" id="groupPassword">
@@ -103,7 +103,7 @@
                         <label for="loginPassword" class="form-label">Kata Sandi <span class="req">*</span></label>
                         <button type="button" id="togglePwdBtn" style="font-size:0.74rem;font-weight:700;color:var(--color-primary);">Lihat Sandi</button>
                     </div>
-                    <input type="password" id="loginPassword" class="form-control" value="password123" placeholder="Minimal 4 karakter" required />
+                    <input type="password" id="loginPassword" class="form-control" placeholder="Masukkan kata sandi akun" required />
                     <span class="form-error" id="errPassword">Kata sandi wajib diisi (minimal 4 karakter).</span>
                 </div>
 
@@ -121,28 +121,6 @@
           <span>Masuk ke Workspace →</span>
         </button>
             </form>
-
-            <!-- Quick Access Accounts -->
-            <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border-subtle);">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);">Akses Cepat Akun Perusahaan</span>
-                    <span style="font-size:0.7rem;color:var(--text-muted);">1-Klik Masuk</span>
-                </div>
-                <div class="demo-chips">
-                    <button type="button" class="demo-chip" data-quick-demo="SUPER_ADMIN" data-email="arya.pratama@aurahr.id">
-            <div class="demo-chip__role" style="color:var(--color-violet);">Super Admin</div>
-            <div class="demo-chip__user">Arya Pratama</div>
-          </button>
-                    <button type="button" class="demo-chip" data-quick-demo="HR" data-email="siti.rahma@aurahr.id">
-            <div class="demo-chip__role">HR Manager</div>
-            <div class="demo-chip__user">Siti Rahmawati</div>
-          </button>
-                    <button type="button" class="demo-chip" data-quick-demo="KARYAWAN" data-email="budi.santoso@aurahr.id">
-            <div class="demo-chip__role" style="color:var(--status-success);">Karyawan ESS</div>
-            <div class="demo-chip__user">Budi Santoso</div>
-          </button>
-                </div>
-            </div>
         </section>
     </main>
 
@@ -151,11 +129,6 @@
     <script>
         (function() {
             let selectedRole = 'HR';
-            const rolePresets = {
-                SUPER_ADMIN: 'arya.pratama@aurahr.id',
-                HR: 'siti.rahma@aurahr.id',
-                KARYAWAN: 'budi.santoso@aurahr.id'
-            };
 
             const idInput = document.getElementById('loginIdentifier');
             const pwdInput = document.getElementById('loginPassword');
@@ -165,8 +138,6 @@
             function activateRoleTab(role) {
                 selectedRole = role;
                 tabs.forEach(t => t.classList.toggle('is-active', t.dataset.roleTab === role));
-                idInput.value = rolePresets[role] || '';
-                pwdInput.value = 'password123';
                 alertBox.style.display = 'none';
             }
 
@@ -195,25 +166,6 @@
                     window.location.href = './pages/dashboard.html';
                 }
             }
-
-            document.querySelectorAll('[data-quick-demo]').forEach(chip => {
-                chip.addEventListener('click', () => {
-                    const role = chip.dataset.quickDemo;
-                    const acc = AuraStore.getAccounts().find(a => a.email.toLowerCase() === chip.dataset.email.toLowerCase());
-                    activateRoleTab(role);
-                    if (acc) {
-                        pwdInput.value = acc.password;
-                        const res = AuraStore.login(acc.email, acc.password);
-                        if (res.ok) {
-                            AuraApp.showToast('Berhasil masuk sebagai ' + res.session.name, 'success');
-                            setTimeout(() => redirectByRole(res.session.role), 300);
-                        } else {
-                            alertBox.textContent = res.message;
-                            alertBox.style.display = 'block';
-                        }
-                    }
-                });
-            });
 
             document.getElementById('loginForm').addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -246,7 +198,7 @@
 
                 if (!valid) return;
 
-                const res = AuraStore.login(idVal, pwdVal);
+                const res = AuraStore.login(idVal, pwdVal, selectedRole);
                 if (!res.ok) {
                     alertBox.textContent = res.message;
                     alertBox.style.display = 'block';
