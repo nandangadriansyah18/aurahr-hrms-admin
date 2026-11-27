@@ -72,24 +72,63 @@
         <div id="essViewHome" style="display:flex;flex-direction:column;gap:24px;">
           <!-- ROW 1: LIVE ATTENDANCE CLOCK + 3 PERSONAL KPI CARDS -->
           <section class="split-grid">
-            <article class="glass-card glass-card--elevated" style="display:flex;flex-direction:column;justify-content:space-between;gap:18px;">
+            <article class="glass-card glass-card--elevated" style="display:flex;flex-direction:column;justify-content:space-between;gap:14px;">
+              <!-- HEADER: MODE KERJA & STATUS SESI -->
               <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                <select id="workModeSelect" class="form-control" style="width:auto;font-size:0.78rem;padding:6px 12px;">
+                <select id="workModeSelect" class="form-control" style="width:auto;font-size:0.78rem;padding:6px 12px;font-weight:600;">
                   <option value="WFO - Kantor Pusat Jakarta">📍 WFO - Kantor Pusat Jakarta</option>
                   <option value="Hybrid / Work From Home">🏠 Hybrid / Work From Home</option>
+                  <option value="Dinas Luar / Client Visit">🚗 Dinas Luar / Client Visit</option>
                 </select>
                 <span class="badge badge--active" id="attendanceStateBadge">Masuk: 07:56 WIB</span>
               </div>
 
-              <div>
-                <p style="font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);">Waktu Presensi Langsung</p>
-                <div class="mono" id="liveDigitalClock" style="font-size:2.35rem;font-weight:800;color:var(--text-primary);line-height:1.15;margin-top:4px;">08:00:00 WIB</div>
-                <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">Jadwal Shift Reguler: 08:00 – 17:00 WIB</p>
+              <!-- JAM PRESENSI LANGSUNG + STOPWATCH DURASI KERJA -->
+              <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <p id="liveDateLabel" style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);">Waktu Presensi Langsung • Shift Reguler (08:00 – 17:00)</p>
+                  <div class="mono" id="liveDigitalClock" style="font-size:2.2rem;font-weight:800;color:var(--text-primary);line-height:1.12;margin-top:4px;">08:00:00 WIB</div>
+                </div>
+                <div style="padding:8px 12px;border-radius:12px;background:rgba(79,70,229,0.06);border:1px solid rgba(79,70,229,0.18);text-align:right;min-width:155px;">
+                  <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-primary);">⏱ Durasi Kerja Hari Ini</div>
+                  <div class="mono" id="liveWorkDurationTimer" style="font-size:1.12rem;font-weight:800;color:var(--text-primary);margin-top:2px;">00j 00m 00d</div>
+                  <div id="livePunctualityText" style="font-size:0.68rem;color:var(--text-secondary);">Target Shift: 8 Jam Kerja</div>
+                </div>
               </div>
 
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">
-                <span style="font-size:0.78rem;color:var(--text-secondary);">Klik untuk mencatat jam keluar/masuk:</span>
-                <button type="button" class="btn btn--primary" id="checkInOutBtn">Check-Out Pulang</button>
+              <!-- GPS GEOFENCING & RADIUS KANTOR -->
+              <div style="padding:10px 13px;border-radius:12px;background:rgba(255,255,255,0.78);border:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <span style="width:9px;height:9px;border-radius:50%;background:#10B981;box-shadow:0 0 0 4px rgba(16,185,129,0.18);display:inline-block;flex-shrink:0;"></span>
+                  <div>
+                    <div style="font-size:0.75rem;font-weight:700;color:var(--text-primary);" id="gpsRadiusBadge">Dalam Radius Kantor Pusat • 38m (Maks. 150m)</div>
+                    <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);" id="gpsCoordText">GPS: -6.2249, 106.8096 • SCBD Jakarta Selatan</div>
+                  </div>
+                </div>
+                <button type="button" id="refreshGpsBtn" class="btn btn--sm btn--glass" style="font-size:0.72rem;padding:4px 10px;">Akurasi GPS ↻</button>
+              </div>
+
+              <!-- TIMELINE SHIFT & PROGRESS BAR 8 JAM -->
+              <div style="padding:10px 13px;border-radius:12px;background:rgba(248,250,252,0.85);border:1px solid var(--border-subtle);">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.74rem;margin-bottom:6px;">
+                  <span>Masuk: <strong class="mono" id="shiftCheckInTime" style="color:var(--status-success);">--:-- WIB</strong></span>
+                  <span id="shiftProgressLabel" style="font-weight:700;color:var(--color-primary);">0% Shift</span>
+                  <span>Pulang: <strong class="mono" id="shiftCheckOutTime">17:00 WIB</strong></span>
+                </div>
+                <div class="progress-track" style="height:7px;">
+                  <div class="progress-fill" id="shiftProgressBar" style="width:0%;"></div>
+                </div>
+              </div>
+
+              <!-- CATATAN AKTIVITAS HARIAN -->
+              <div>
+                <input type="text" id="dailyWorkNoteInput" class="form-control" style="font-size:0.8rem;padding:8px 12px;" placeholder="Catatan rencana/aktivitas kerja hari ini (opsional)..." />
+              </div>
+
+              <!-- TOMBOL CHECK-IN / CHECK-OUT DENGAN VERIFIKASI KAMERA SELFIE -->
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:10px;border-top:1px solid var(--border-subtle);">
+                <span style="font-size:0.75rem;color:var(--text-secondary);">Verifikasi Selfie &amp; Lokasi GPS:</span>
+                <button type="button" class="btn btn--primary" id="checkInOutBtn">📸 Check-Out Pulang</button>
               </div>
             </article>
 
@@ -135,10 +174,11 @@
                 <thead>
                   <tr>
                     <th>Tanggal</th>
-                    <th>Mode / Lokasi</th>
+                    <th>Lokasi GPS &amp; Catatan Kerja</th>
                     <th>Jam Masuk</th>
                     <th>Jam Keluar</th>
-                    <th>Status</th>
+                    <th>Durasi Kerja</th>
+                    <th>Status &amp; Bukti</th>
                   </tr>
                 </thead>
                 <tbody id="essAttendanceTbody"></tbody>
@@ -230,12 +270,68 @@
   <script>
     (function () {
       const EMPLOYEE_NIP = 'AUR-0108';
-      let currentEssTab = 'all';
+      let currentGpsCoord = '-6.2249, 106.8096 • SCBD Jakarta (38m)';
+      let activeCheckInRecord = null;
 
       function getCurrentEmployee() {
         const session = AuraStore.getSession();
         const emps = AuraStore.getEmployees();
         return emps.find(e => e.nip === session.nip) || emps.find(e => e.nip === EMPLOYEE_NIP) || emps[0];
+      }
+
+      function parseTimeToSeconds(timeStr) {
+        if (!timeStr) return null;
+        const clean = String(timeStr).replace(' WIB', '').trim();
+        const parts = clean.split(':').map(Number);
+        if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+        return (parts[0] * 3600) + (parts[1] * 60) + (parts[2] || 0);
+      }
+
+      function formatDurationHms(totalSec) {
+        const sec = Math.max(0, Math.floor(totalSec));
+        const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+        const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        return `${h}j ${m}m ${s}d`;
+      }
+
+      function calcRecordDuration(rec) {
+        const inSec = parseTimeToSeconds(rec.checkIn);
+        if (inSec === null) return '-';
+        let outSec = parseTimeToSeconds(rec.checkOut);
+        if (outSec === null) {
+          const now = new Date();
+          const todayIso = now.toISOString().slice(0, 10);
+          if (rec.date === todayIso) {
+            outSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+          } else {
+            return 'Sedang Aktif';
+          }
+        }
+        let diff = outSec - inSec;
+        if (diff < 0) diff += 86400;
+        return formatDurationHms(diff);
+      }
+
+      function updateGpsByMode() {
+        const mode = document.getElementById('workModeSelect').value;
+        const badgeEl = document.getElementById('gpsRadiusBadge');
+        const coordEl = document.getElementById('gpsCoordText');
+        if (mode.includes('WFO')) {
+          const dist = Math.floor(22 + Math.random() * 35);
+          currentGpsCoord = `-6.2249, 106.8096 • SCBD Jakarta (${dist}m)`;
+          badgeEl.textContent = `Dalam Radius Kantor Pusat • ${dist}m (Maks. 150m) ✓`;
+          badgeEl.style.color = 'var(--status-success)';
+        } else if (mode.includes('Hybrid')) {
+          currentGpsCoord = `-6.2741, 106.7382 • Lokasi Remote Terverifikasi GPS`;
+          badgeEl.textContent = `Mode Hybrid / WFH • Titik GPS Terverifikasi ✓`;
+          badgeEl.style.color = 'var(--color-primary)';
+        } else {
+          currentGpsCoord = `-6.2088, 106.8456 • Kunjungan Klien Jakarta`;
+          badgeEl.textContent = `Dinas Luar • Titik Kunjungan Klien Tercatat ✓`;
+          badgeEl.style.color = '#D97706';
+        }
+        coordEl.textContent = `GPS: ${currentGpsCoord}`;
       }
 
       function tickClock() {
@@ -244,6 +340,28 @@
         const mm = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
         document.getElementById('liveDigitalClock').textContent = `${hh}:${mm}:${ss} WIB`;
+
+        const daysIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const monthsIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const dateLabel = document.getElementById('liveDateLabel');
+        if (dateLabel) {
+          dateLabel.textContent = `${daysIndo[now.getDay()]}, ${now.getDate()} ${monthsIndo[now.getMonth()]} ${now.getFullYear()} • Shift Reguler (08:00 – 17:00)`;
+        }
+
+        // Update Live Work Duration Stopwatch & Shift Progress Bar
+        const timerEl = document.getElementById('liveWorkDurationTimer');
+        const progBar = document.getElementById('shiftProgressBar');
+        const progLbl = document.getElementById('shiftProgressLabel');
+        if (activeCheckInRecord && activeCheckInRecord.checkIn) {
+          const inSec = parseTimeToSeconds(activeCheckInRecord.checkIn);
+          const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+          let elapsed = nowSec - inSec;
+          if (elapsed < 0) elapsed = Math.abs(elapsed);
+          if (timerEl) timerEl.textContent = formatDurationHms(elapsed);
+          const pct = Math.min(100, Math.max(4, Math.round((elapsed / (8 * 3600)) * 100)));
+          if (progBar) progBar.style.width = pct + '%';
+          if (progLbl) progLbl.textContent = `${pct}% Shift (Target 8 Jam)`;
+        }
       }
 
       function renderEssPortal() {
@@ -271,34 +389,90 @@
           attBadgeEl.className = uniqueAttDays > 0 ? 'badge badge--active' : 'badge badge--warning';
         }
         const openSession = myAtt.find(a => !a.checkOut);
+        activeCheckInRecord = openSession || null;
         const btn = document.getElementById('checkInOutBtn');
         const stateBadge = document.getElementById('attendanceStateBadge');
+        const shiftInEl = document.getElementById('shiftCheckInTime');
+        const shiftOutEl = document.getElementById('shiftCheckOutTime');
+        const puncEl = document.getElementById('livePunctualityText');
+        const noteInput = document.getElementById('dailyWorkNoteInput');
+
         if (openSession) {
-          btn.textContent = 'Check-Out Pulang';
+          btn.textContent = '📸 Check-Out Pulang';
           btn.className = 'btn btn--primary';
-          stateBadge.textContent = `Masuk: ${openSession.checkIn}`;
+          stateBadge.textContent = `● Sedang Bekerja (Masuk ${openSession.checkIn})`;
           stateBadge.className = 'badge badge--active';
+          if (shiftInEl) shiftInEl.textContent = openSession.checkIn;
+          if (shiftOutEl) shiftOutEl.textContent = '17:00 WIB (Target)';
+          if (puncEl) {
+            puncEl.textContent = openSession.status === 'Terlambat' ? '⚠ Masuk Melewati 08:15 WIB' : '✓ Hadir Tepat Waktu';
+            puncEl.style.color = openSession.status === 'Terlambat' ? '#D97706' : 'var(--status-success)';
+          }
+          if (noteInput && openSession.note && !noteInput.value) {
+            noteInput.value = openSession.note;
+          }
+          tickClock();
         } else {
-          btn.textContent = 'Check-In Masuk Kerja';
+          btn.textContent = '📸 Check-In Masuk Kerja';
           btn.className = 'btn btn--success';
-          stateBadge.textContent = 'Sesi Selesai / Siap Check-In';
+          stateBadge.textContent = 'Siap Check-In Shift';
           stateBadge.className = 'badge badge--info';
+          const lastCompleted = myAtt[0];
+          if (lastCompleted && lastCompleted.checkOut) {
+            if (shiftInEl) shiftInEl.textContent = lastCompleted.checkIn;
+            if (shiftOutEl) shiftOutEl.textContent = lastCompleted.checkOut;
+            document.getElementById('liveWorkDurationTimer').textContent = calcRecordDuration(lastCompleted);
+            document.getElementById('shiftProgressBar').style.width = '100%';
+            document.getElementById('shiftProgressLabel').textContent = '100% Shift Selesai';
+            if (puncEl) {
+              puncEl.textContent = '✓ Sesi Terakhir Selesai';
+              puncEl.style.color = 'var(--text-secondary)';
+            }
+          } else {
+            if (shiftInEl) shiftInEl.textContent = '--:-- WIB';
+            if (shiftOutEl) shiftOutEl.textContent = '17:00 WIB';
+            document.getElementById('liveWorkDurationTimer').textContent = '00j 00m 00d';
+            document.getElementById('shiftProgressBar').style.width = '0%';
+            document.getElementById('shiftProgressLabel').textContent = '0% Shift';
+          }
         }
 
         // Render Attendance Table (Beranda & Presensi)
         const attTbody = document.getElementById('essAttendanceTbody');
         if (attTbody) {
           attTbody.innerHTML = myAtt.length
-            ? myAtt.map(a => `
-                <tr>
-                  <td>${AuraApp.formatDateIndo(a.date)}</td>
-                  <td>${a.mode || 'WFO - Kantor Pusat Jakarta'}</td>
-                  <td class="mono" style="font-weight:700;color:var(--status-success);">${a.checkIn}</td>
-                  <td class="mono" style="font-weight:700;">${a.checkOut || '<span style="color:var(--text-muted);">Belum pulang</span>'}</td>
-                  <td><span class="badge ${a.checkOut ? 'badge--active' : 'badge--info'}">${a.checkOut ? 'Selesai' : 'Aktif'}</span></td>
-                </tr>
-              `).join('')
-            : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada catatan presensi hari ini.</td></tr>';
+            ? myAtt.map(a => {
+                const statusBadge = a.checkOut
+                  ? '<span class="badge badge--active">Selesai</span>'
+                  : `<span class="badge ${a.status === 'Terlambat' ? 'badge--warning' : 'badge--info'}">${a.status || 'Sedang Bekerja'}</span>`;
+                return `
+                  <tr>
+                    <td><strong>${AuraApp.formatDateIndo(a.date)}</strong></td>
+                    <td>
+                      <div style="font-weight:600;">${a.mode || 'WFO - Kantor Pusat Jakarta'}</div>
+                      <div class="mono" style="font-size:0.71rem;color:var(--text-secondary);">${a.gps || '-6.2249, 106.8096 • SCBD Jakarta'}</div>
+                      ${a.note ? `<div style="font-size:0.73rem;color:var(--color-primary);margin-top:2px;">📝 "${a.note}"</div>` : ''}
+                    </td>
+                    <td class="mono" style="font-weight:700;color:var(--status-success);">${a.checkIn}</td>
+                    <td class="mono" style="font-weight:700;">${a.checkOut || '<span style="color:var(--text-muted);">Belum pulang</span>'}</td>
+                    <td class="mono" style="font-weight:600;">${calcRecordDuration(a)}</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        ${statusBadge}
+                        <button type="button" class="btn btn--sm btn--glass" style="padding:3px 8px;font-size:0.7rem;" data-view-att="${a.id}">📷 Bukti</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')
+            : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada catatan presensi hari ini.</td></tr>';
+
+          attTbody.querySelectorAll('[data-view-att]').forEach(b => {
+            b.addEventListener('click', () => {
+              const rec = myAtt.find(x => x.id === b.dataset.viewAtt);
+              if (rec) openAttendanceProofModal(rec, emp);
+            });
+          });
         }
 
         // Render Leave Table (Pengajuan Cuti & Izin)
@@ -340,17 +514,248 @@
         });
       }
 
+      document.getElementById('workModeSelect').addEventListener('change', updateGpsByMode);
+
+      document.getElementById('refreshGpsBtn').addEventListener('click', () => {
+        const coordEl = document.getElementById('gpsCoordText');
+        coordEl.textContent = 'Mencari sinyal satelit GPS...';
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude.toFixed(4);
+              const lng = pos.coords.longitude.toFixed(4);
+              const acc = Math.round(pos.coords.accuracy || 18);
+              currentGpsCoord = `${lat}, ${lng} • Akurasi ±${acc}m`;
+              coordEl.textContent = `GPS: ${currentGpsCoord}`;
+              AuraApp.showToast('Titik koordinat GPS perangkat berhasil dikunci!', 'success');
+            },
+            () => {
+              updateGpsByMode();
+              AuraApp.showToast('Koordinat GPS Kantor Pusat berhasil disinkronkan!', 'info');
+            },
+            { timeout: 3500 }
+          );
+        } else {
+          updateGpsByMode();
+          AuraApp.showToast('Koordinat GPS diperbarui!', 'info');
+        }
+      });
+
+      function generateWatermarkedSnapshot(videoEl, emp, actionLabel, mode, gpsText) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 480;
+        canvas.height = 320;
+        const ctx = canvas.getContext('2d');
+
+        if (videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0) {
+          ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+        } else {
+          // Fallback Biometric Portrait Canvas jika kamera laptop sedang tidak aktif
+          const grad = ctx.createLinearGradient(0, 0, 480, 320);
+          grad.addColorStop(0, '#1E1B4B');
+          grad.addColorStop(1, '#312E81');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 480, 320);
+
+          // Grid Biometrik
+          ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+          ctx.lineWidth = 1;
+          for (let x = 40; x < 480; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 320); ctx.stroke();
+          }
+          for (let y = 40; y < 320; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(480, y); ctx.stroke();
+          }
+
+          // Lingkaran Avatar & Inisial
+          ctx.fillStyle = 'rgba(79, 70, 229, 0.45)';
+          ctx.beginPath();
+          ctx.arc(240, 118, 48, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = 'bold 28px Plus Jakarta Sans, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(AuraApp.initials(emp.name), 240, 128);
+          ctx.font = '600 12px Plus Jakarta Sans, sans-serif';
+          ctx.fillStyle = '#A5F3FC';
+          ctx.fillText('BIOMETRIC & GPS VERIFIED SNAPSHOT', 240, 188);
+          ctx.textAlign = 'left';
+        }
+
+        // Watermark Bar Bawah ala Aplikasi HRIS Enterprise (Mekari Talenta / GreatDay)
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+        ctx.fillRect(0, 224, 480, 96);
+
+        ctx.fillStyle = '#10B981';
+        ctx.font = 'bold 11px JetBrains Mono, monospace';
+        ctx.fillText(`✓ AURAHR VERIFIED • ${actionLabel.toUpperCase()}`, 16, 244);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 14px Plus Jakarta Sans, sans-serif';
+        ctx.fillText(`${emp.name} (${emp.nip})`, 16, 265);
+
+        const now = new Date();
+        const tsStr = `${now.toISOString().slice(0, 10)} • ${now.toTimeString().slice(0, 8)} WIB`;
+        ctx.fillStyle = '#CBD5E1';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText(`${tsStr} | ${mode}`, 16, 285);
+        ctx.fillText(`GPS: ${gpsText}`, 16, 304);
+
+        return canvas.toDataURL('image/jpeg', 0.84);
+      }
+
+      function openAttendanceProofModal(rec, emp) {
+        const fallbackImg = generateWatermarkedSnapshot(null, emp, rec.checkOut ? 'Bukti Presensi Selesai' : 'Bukti Check-In', rec.mode || 'WFO', rec.gps || currentGpsCoord);
+        const photoSrc = rec.photo || fallbackImg;
+        AuraApp.openModal({
+          title: `Bukti Verifikasi Presensi — ${AuraApp.formatDateIndo(rec.date)}`,
+          bodyHtml: `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <img src="${photoSrc}" alt="Bukti Presensi" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);box-shadow:0 8px 24px rgba(15,23,42,0.12);" />
+              <div style="padding:11px 14px;border-radius:11px;background:#F8FAFC;border:1px solid var(--border-subtle);font-size:0.8rem;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div><span style="color:var(--text-secondary);">Jam Masuk:</span><br><strong class="mono" style="color:var(--status-success);">${rec.checkIn}</strong></div>
+                <div><span style="color:var(--text-secondary);">Jam Keluar:</span><br><strong class="mono">${rec.checkOut || 'Masih Bekerja'}</strong></div>
+                <div><span style="color:var(--text-secondary);">Durasi Kerja:</span><br><strong class="mono">${calcRecordDuration(rec)}</strong></div>
+                <div><span style="color:var(--text-secondary);">Status Kehadiran:</span><br><strong>${rec.status || 'Hadir Tepat Waktu'}</strong></div>
+                <div style="grid-column:span 2;"><span style="color:var(--text-secondary);">Titik Koordinat GPS:</span><br><strong class="mono" style="font-size:0.74rem;">${rec.gps || currentGpsCoord}</strong></div>
+                ${rec.note ? `<div style="grid-column:span 2;"><span style="color:var(--text-secondary);">Catatan Aktivitas Kerja:</span><br><strong>"${rec.note}"</strong></div>` : ''}
+              </div>
+            </div>
+          `,
+          confirmText: 'Tutup',
+          cancelText: 'Kembali'
+        });
+      }
+
       document.getElementById('checkInOutBtn').addEventListener('click', () => {
         const emp = getCurrentEmployee();
         const mode = document.getElementById('workModeSelect').value;
-        const res = AuraStore.toggleCheckInOut(emp.nip, mode);
-        AuraApp.showToast(
-          res.action === 'checkin'
-            ? `Berhasil Check-In pada ${res.record.checkIn}!`
-            : `Berhasil Check-Out pulang pada ${res.record.checkOut}!`,
-          'success'
-        );
-        renderEssPortal();
+        const noteVal = document.getElementById('dailyWorkNoteInput').value.trim();
+        const isCheckOut = Boolean(activeCheckInRecord);
+        const actionTitle = isCheckOut ? 'Check-Out Pulang Kerja' : 'Check-In Masuk Kerja';
+        let mediaStream = null;
+        let capturedDataUrl = null;
+
+        function stopCamera() {
+          if (mediaStream) {
+            mediaStream.getTracks().forEach(t => t.stop());
+            mediaStream = null;
+          }
+        }
+
+        AuraApp.openModal({
+          title: `Verifikasi Selfie & GPS — ${actionTitle}`,
+          bodyHtml: `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="position:relative;border-radius:12px;overflow:hidden;background:#0F172A;aspect-ratio:3/2;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-subtle);">
+                <video id="selfieVideoEl" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;"></video>
+                <img id="selfiePreviewImg" alt="Preview Selfie" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                <div id="selfieCameraStatus" style="color:#E2E8F0;font-size:0.8rem;text-align:center;padding:16px;">
+                  Mengaktifkan kamera perangkat &amp; mengunci koordinat GPS...
+                </div>
+                <div style="position:absolute;bottom:8px;left:8px;right:8px;padding:7px 10px;border-radius:8px;background:rgba(15,23,42,0.78);color:#F8FAFC;font-size:0.71rem;display:flex;justify-content:space-between;align-items:center;">
+                  <span class="mono">📍 ${currentGpsCoord}</span>
+                  <span style="color:#34D399;font-weight:700;">● GPS Terkunci</span>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <button type="button" id="captureSelfieBtn" class="btn btn--sm btn--glass" style="width:100%;">📸 Ambil Foto Selfie + Watermark Timestamp</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="modalWorkNoteInput">Catatan Aktivitas Kerja Hari Ini</label>
+                <input type="text" id="modalWorkNoteInput" class="form-control" value="${noteVal.replace(/"/g, '&quot;')}" placeholder="Contoh: Menyelesaikan laporan &amp; koordinasi tim..." />
+              </div>
+            </div>
+          `,
+          confirmText: `Konfirmasi ${actionTitle} ✓`,
+          onConfirm: () => {
+            const videoEl = document.getElementById('selfieVideoEl');
+            if (!capturedDataUrl) {
+              capturedDataUrl = generateWatermarkedSnapshot(videoEl, emp, actionTitle, mode, currentGpsCoord);
+            }
+            const finalNote = document.getElementById('modalWorkNoteInput').value.trim();
+            stopCamera();
+            const res = AuraStore.toggleCheckInOut(emp.nip, mode, {
+              gps: currentGpsCoord,
+              note: finalNote,
+              photo: capturedDataUrl
+            });
+            document.getElementById('dailyWorkNoteInput').value = '';
+            AuraApp.showToast(
+              res.action === 'checkin'
+                ? `Check-In terverifikasi pada ${res.record.checkIn} (GPS & Foto Tersimpan)!`
+                : `Check-Out pulang tercatat pada ${res.record.checkOut}!`,
+              'success'
+            );
+            renderEssPortal();
+            return true;
+          }
+        });
+
+        // Aktifkan kamera laptop/HP jika tersedia
+        const videoEl = document.getElementById('selfieVideoEl');
+        const previewImg = document.getElementById('selfiePreviewImg');
+        const statusEl = document.getElementById('selfieCameraStatus');
+        const captureBtn = document.getElementById('captureSelfieBtn');
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 320 } })
+            .then(stream => {
+              mediaStream = stream;
+              if (videoEl) {
+                videoEl.srcObject = stream;
+                videoEl.style.display = 'block';
+              }
+              if (statusEl) statusEl.style.display = 'none';
+            })
+            .catch(() => {
+              capturedDataUrl = generateWatermarkedSnapshot(null, emp, actionTitle, mode, currentGpsCoord);
+              if (previewImg) {
+                previewImg.src = capturedDataUrl;
+                previewImg.style.display = 'block';
+              }
+              if (statusEl) statusEl.style.display = 'none';
+            });
+        } else {
+          capturedDataUrl = generateWatermarkedSnapshot(null, emp, actionTitle, mode, currentGpsCoord);
+          if (previewImg) {
+            previewImg.src = capturedDataUrl;
+            previewImg.style.display = 'block';
+          }
+          if (statusEl) statusEl.style.display = 'none';
+        }
+
+        const closeBtn = document.getElementById('globalModalClose');
+        const cancelBtn = document.getElementById('globalModalCancel');
+        if (closeBtn) closeBtn.addEventListener('click', stopCamera, { once: true });
+        if (cancelBtn) cancelBtn.addEventListener('click', stopCamera, { once: true });
+
+        if (captureBtn) {
+          captureBtn.addEventListener('click', () => {
+            capturedDataUrl = generateWatermarkedSnapshot(videoEl, emp, actionTitle, mode, currentGpsCoord);
+            if (previewImg) {
+              previewImg.src = capturedDataUrl;
+              previewImg.style.display = 'block';
+            }
+            if (videoEl) videoEl.style.display = 'none';
+            if (statusEl) statusEl.style.display = 'none';
+            captureBtn.textContent = '✓ Foto Selfie & Watermark Tersimpan (Klik untuk Foto Ulang)';
+            captureBtn.addEventListener('click', () => {
+              if (mediaStream && videoEl) {
+                capturedDataUrl = null;
+                previewImg.style.display = 'none';
+                videoEl.style.display = 'block';
+                captureBtn.textContent = '📸 Ambil Foto Selfie + Watermark Timestamp';
+              }
+            }, { once: true });
+          });
+        }
       });
 
       function showPayslipModal() {

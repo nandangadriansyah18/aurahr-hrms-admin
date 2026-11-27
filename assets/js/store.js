@@ -150,9 +150,9 @@
       }
     ],
     essAttendances: [
-      { id: 'ATT-01', nip: 'AUR-0108', date: '2026-11-26', checkIn: '07:56 WIB', checkOut: null, mode: 'WFO - Kantor Pusat Jakarta', status: 'Hadir Tepat Waktu' },
-      { id: 'ATT-02', nip: 'AUR-0108', date: '2026-11-25', checkIn: '07:52 WIB', checkOut: '17:08 WIB', mode: 'WFO - Kantor Pusat Jakarta', status: 'Hadir Tepat Waktu' },
-      { id: 'ATT-03', nip: 'AUR-0108', date: '2026-11-24', checkIn: '08:00 WIB', checkOut: '17:15 WIB', mode: 'Hybrid / Remote', status: 'Hadir Tepat Waktu' }
+      { id: 'ATT-01', nip: 'AUR-0108', date: '2026-11-26', checkIn: '07:56:12 WIB', checkOut: null, mode: 'WFO - Kantor Pusat Jakarta', status: 'Hadir Tepat Waktu', gps: '-6.2249, 106.8096 • SCBD Jakarta (34m)', note: 'Integrasi modul dashboard & API presensi' },
+      { id: 'ATT-02', nip: 'AUR-0108', date: '2026-11-25', checkIn: '07:52:00 WIB', checkOut: '17:08:00 WIB', mode: 'WFO - Kantor Pusat Jakarta', status: 'Hadir Tepat Waktu', gps: '-6.2249, 106.8096 • SCBD Jakarta (41m)', note: 'Optimasi komponen tabel Data Master' },
+      { id: 'ATT-03', nip: 'AUR-0108', date: '2026-11-24', checkIn: '08:00:00 WIB', checkOut: '17:15:00 WIB', mode: 'Hybrid / Work From Home', status: 'Hadir Tepat Waktu', gps: '-6.2741, 106.7382 • Bintaro (Remote GPS)', note: 'Code review & sinkronisasi desain UI' }
     ],
     accounts: [
       { id: 'ACC-01', nip: 'AUR-0001', name: 'Arya Pratama, S.Kom', email: 'arya.pratama@aurahr.id', password: 'password123', role: 'SUPER_ADMIN', lastLogin: 'Hari ini, 08:10 WIB', active: true },
@@ -395,7 +395,7 @@
       return loadDB().essAttendances.filter(a => !nip || a.nip === nip);
     },
 
-    toggleCheckInOut(nip, modeText) {
+    toggleCheckInOut(nip, modeText, extra = {}) {
       const db = loadDB();
       const emp = db.employees.find(e => e.nip === nip);
       const now = new Date();
@@ -404,6 +404,9 @@
       let todayRec = db.essAttendances.find(a => a.nip === nip && !a.checkOut);
       if (todayRec) {
         todayRec.checkOut = timeStr;
+        if (extra.note) todayRec.note = extra.note;
+        if (extra.photo) todayRec.photo = extra.photo;
+        if (extra.gps) todayRec.gps = extra.gps;
         if (emp) {
           todayRec.employeeName = emp.name;
           todayRec.dept = emp.dept;
@@ -412,6 +415,9 @@
         pushToPhp('toggleCheckInOut', { action: 'checkout', nip, record: todayRec });
         return { action: 'checkout', record: todayRec };
       }
+      // Deteksi otomatis Hadir Tepat Waktu vs Terlambat (toleransi shift 08:15 WIB)
+      const totalMinutes = now.getHours() * 60 + now.getMinutes();
+      const autoStatus = extra.status || (totalMinutes <= (8 * 60 + 15) ? 'Hadir Tepat Waktu' : 'Terlambat');
       const newRec = {
         id: 'ATT-' + Date.now().toString().slice(-4),
         nip,
@@ -421,7 +427,10 @@
         checkIn: timeStr,
         checkOut: null,
         mode: modeText || 'WFO - Kantor Pusat Jakarta',
-        status: 'Hadir Tepat Waktu'
+        status: autoStatus,
+        gps: extra.gps || '-6.2249, 106.8096 • SCBD Jakarta (38m)',
+        note: extra.note || '',
+        photo: extra.photo || null
       };
       db.essAttendances.unshift(newRec);
       saveDB(db);

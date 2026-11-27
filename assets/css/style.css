@@ -1141,100 +1141,53 @@ body.sidebar-collapsed .app-main {
 }
 
 /* ==========================================================================
-   3. LOGIN PAGE (CENTERED SCENIC GLASSMORPHISM)
+   3. LOGIN PAGE (SPLIT-SCREEN LUXURY GLASSMORPHISM)
    ========================================================================== */
 
-body[data-page="login"] {
-  position: relative;
+.login-wrapper {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 24px;
-  background-color: #1E1B4B;
-  background-image:
-    linear-gradient(135deg, rgba(49, 46, 129, 0.72) 0%, rgba(79, 70, 229, 0.58) 45%, rgba(14, 165, 233, 0.52) 100%),
-    url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=85');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  overflow-x: hidden;
+  grid-template-columns: 1.1fr 1fr;
+  padding: 32px;
+  gap: 32px;
+  max-width: 1320px;
+  margin: 0 auto;
+  align-items: center;
 }
 
-body[data-page="login"]::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 25%, rgba(139, 92, 246, 0.38) 0%, transparent 45%),
-    radial-gradient(circle at 80% 75%, rgba(14, 165, 233, 0.35) 0%, transparent 48%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.25) 0%, rgba(15, 23, 42, 0.55) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.login-center-stage {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 460px;
+.login-showcase {
+  padding: 40px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 18px;
+  gap: 24px;
 }
-
-.login-glass-card {
-  width: 100%;
-  padding: 38px 36px 34px;
-  border-radius: 26px;
-  background: rgba(15, 23, 42, 0.52);
-  backdrop-filter: blur(24px) saturate(185%);
-  -webkit-backdrop-filter: blur(24px) saturate(185%);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow:
-    0 24px 60px rgba(2, 6, 23, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  color: #FFFFFF;
-}
-
-.login-glass-card__header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.login-glass-card__logo {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 14px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-  display: grid;
-  place-items: center;
-  color: #FFFFFF;
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.login-glass-card__title {
-  font-size: 1.55rem;
+.login-showcase__title {
+  font-size: 2.5rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #FFFFFF;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
 }
-
-.login-glass-card__subtitle {
-  font-size: 0.82rem;
-  color: rgba(226, 232, 240, 0.82);
-  margin-top: 4px;
+.login-showcase__title span {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
-
-.login-glass-card__divider {
-  height: 2px;
-  width: 100%;
-  margin: 16px 0 22px;
-  background: linear-gradient(90deg, transparent, #818CF8, #38BDF8, transparent);
-  border-radius: var(--radius-full);
+.login-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+.login-feature-pill {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
 }
 
 .role-tabs {
@@ -1242,78 +1195,55 @@ body[data-page="login"]::before {
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 5px;
-  background: rgba(15, 23, 42, 0.48);
+  background: rgba(241, 245, 249, 0.9);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--border-subtle);
 }
 .role-tab {
-  padding: 8px 8px;
+  padding: 9px 10px;
   border-radius: 9px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: rgba(226, 232, 240, 0.78);
+  color: var(--text-secondary);
   text-align: center;
   transition: all var(--transition-fast);
-}
-.role-tab:hover {
-  color: #FFFFFF;
 }
 .role-tab.is-active {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #6366F1 100%);
+  background: var(--color-primary);
   color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28);
 }
 
-.login-glass-card .form-label {
-  color: rgba(241, 245, 249, 0.92);
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
+.demo-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
 }
-
-.login-glass-card .form-control {
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-bottom: 2px solid rgba(129, 140, 248, 0.75);
-  color: #FFFFFF;
-  padding: 11px 14px;
-}
-.login-glass-card .form-control::placeholder {
-  color: rgba(203, 213, 225, 0.55);
-}
-.login-glass-card .form-control:focus {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: #38BDF8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22);
-}
-.login-glass-card .form-control.is-invalid {
-  border-color: #F87171;
-  background: rgba(239, 68, 68, 0.16);
-}
-.login-glass-card .form-error {
-  color: #FCA5A5;
-}
-
-.login-btn-pill {
-  width: 100%;
-  padding: 13px 20px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 50%, #0EA5E9 100%);
-  color: #FFFFFF;
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 10px 28px rgba(79, 70, 229, 0.5);
+.demo-chip {
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(79, 70, 229, 0.35);
+  background: rgba(255, 255, 255, 0.75);
+  text-align: left;
   transition: all var(--transition-fast);
 }
-.login-btn-pill:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 34px rgba(79, 70, 229, 0.68);
+.demo-chip:hover {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background: var(--surface-white);
 }
-
-.login-footer-caption {
+.demo-chip__role {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+}
+.demo-chip__user {
   font-size: 0.76rem;
-  color: rgba(226, 232, 240, 0.78);
-  text-align: center;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
 }
 
 /* ==========================================================================

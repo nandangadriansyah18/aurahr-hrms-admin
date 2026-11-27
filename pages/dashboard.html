@@ -230,10 +230,10 @@
                 <tr>
                   <th>Karyawan</th>
                   <th>Tanggal</th>
-                  <th>Lokasi / Mode Kerja</th>
+                  <th>Lokasi GPS &amp; Catatan Kerja</th>
                   <th>Jam Masuk</th>
                   <th>Jam Keluar</th>
-                  <th>Status</th>
+                  <th>Status &amp; Bukti</th>
                 </tr>
               </thead>
               <tbody id="hrAttendanceLogTbody"></tbody>
@@ -483,13 +483,42 @@
                 </div>
               </td>
               <td>${AuraApp.formatDateIndo(a.date)}</td>
-              <td>${a.mode || 'WFO - Kantor Pusat'}</td>
+              <td>
+                <div style="font-weight:600;">${a.mode || 'WFO - Kantor Pusat'}</div>
+                <div class="mono" style="font-size:0.71rem;color:var(--text-secondary);">${a.gps || '-6.2249, 106.8096 • SCBD Jakarta'}</div>
+                ${a.note ? `<div style="font-size:0.73rem;color:var(--color-primary);margin-top:2px;">📝 "${a.note}"</div>` : ''}
+              </td>
               <td class="mono" style="font-weight:700;color:var(--status-success);">${a.checkIn}</td>
               <td class="mono" style="font-weight:700;">${a.checkOut || '<span style="color:var(--text-muted);">Belum pulang</span>'}</td>
-              <td><span class="badge ${a.checkOut ? 'badge--active' : 'badge--info'}">${a.checkOut ? 'Selesai' : 'Sedang Bekerja'}</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <span class="badge ${a.checkOut ? 'badge--active' : (a.status === 'Terlambat' ? 'badge--warning' : 'badge--info')}">${a.checkOut ? 'Selesai' : (a.status || 'Sedang Bekerja')}</span>
+                  ${a.photo ? `<button type="button" class="btn btn--sm btn--glass" style="padding:3px 8px;font-size:0.7rem;" data-hr-photo="${a.id}">📷 Foto</button>` : ''}
+                </div>
+              </td>
             </tr>
           `;
         }).join('');
+
+        tbody.querySelectorAll('[data-hr-photo]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const rec = logs.find(x => x.id === btn.dataset.hrPhoto);
+            if (!rec || !rec.photo) return;
+            AuraApp.openModal({
+              title: `Bukti Selfie & GPS — ${rec.employeeName || rec.nip}`,
+              bodyHtml: `
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <img src="${rec.photo}" alt="Foto Selfie Presensi" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);" />
+                  <div style="font-size:0.8rem;color:var(--text-secondary);">
+                    <strong>Lokasi GPS:</strong> <span class="mono">${rec.gps || '-'}</span><br>
+                    <strong>Catatan Kerja:</strong> ${rec.note || '-'}
+                  </div>
+                </div>
+              `,
+              confirmText: 'Tutup'
+            });
+          });
+        });
       }
 
       document.addEventListener('DOMContentLoaded', () => {

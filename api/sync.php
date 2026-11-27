@@ -43,6 +43,15 @@ function resolvePositionId(PDO $pdo, string $posName, string $deptId, float $all
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// Auto-migrate kolom tambahan presensi (GPS, Catatan Harian, Foto Selfie) jika belum ada
+try {
+    $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS koordinat_gps VARCHAR(140) DEFAULT '-6.2249, 106.8096 • SCBD Jakarta (38m)'");
+    $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS catatan_kerja VARCHAR(255) DEFAULT NULL");
+    $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS foto_bukti LONGTEXT DEFAULT NULL");
+} catch (Throwable $ignore) {
+    // Abaikan jika sudah ada
+}
+
 if ($method === 'GET') {
     $depts = $pdo->query('SELECT id_dept AS id, kode_dept AS code, nama_dept AS name, kepala_divisi AS head, kuota_formasi AS quota FROM departments ORDER BY nama_dept ASC')->fetchAll();
     foreach ($depts as &$d) {
@@ -109,7 +118,10 @@ if ($method === 'GET') {
             a.jam_masuk AS checkInRaw,
             a.jam_keluar AS checkOutRaw,
             a.mode_kerja AS mode,
-            a.status_hadir AS status
+            a.status_hadir AS status,
+            a.koordinat_gps AS gps,
+            a.catatan_kerja AS note,
+            a.foto_bukti AS photo
         FROM attendances a
         JOIN employees e ON a.id_karyawan = e.id_karyawan
         LEFT JOIN departments d ON e.id_dept = d.id_dept
@@ -127,6 +139,9 @@ if ($method === 'GET') {
             'checkOut'     => $a['checkOutRaw'] ? ($a['checkOutRaw'] . ' WIB') : null,
             'mode'         => $a['mode'],
             'status'       => $a['status'],
+            'gps'          => $a['gps'] ?: '-6.2249, 106.8096 • SCBD Jakarta (38m)',
+            'note'         => $a['note'] ?: '',
+            'photo'        => $a['photo'] ?: null,
         ];
     }, $attRows);
 
@@ -275,12 +290,15 @@ if ($method === 'POST') {
                 $checkOutTime = !empty($rec['checkOut']) ? str_replace(' WIB', '', (string)$rec['checkOut']) : null;
 
                 if (($p['action'] ?? '') === 'checkout' && $attId !== '') {
-                    $upd = $pdo->prepare('UPDATE attendances SET jam_keluar = ? WHERE id_absensi = ?');
-                    $upd->execute([$checkOutTime, $attId]);
+                    $upd = $pdo->prepare('UPDATE attendances SET jam_keluar = ?, catatan_kerja = COALESCE(NULLIF(?, \'\'), catatan_kerja), foto_bukti = COALESCE(NULLIF(?, \'\'), foto_bukti) WHERE id_absensi = ?');
+                    $upd->execute([$checkOutTime, (string)($rec['note'] ?? ''), (string)($rec['photo'] ?? ''), $attId]);
                 } else {
+                    $statusHadir = in_array(($rec['status'] ?? ''), ['Hadir Tepat Waktu', 'Terlambat', 'Izin', 'Alpha'], true)
+                        ? $rec['status']
+                        : 'Hadir Tepat Waktu';
                     $ins = $pdo->prepare('
-                        INSERT INTO attendances (id_absensi, id_karyawan, tanggal, jam_masuk, jam_keluar, mode_kerja, status_hadir)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO attendances (id_absensi, id_karyawan, tanggal, jam_masuk, jam_keluar, mode_kerja, status_hadir, koordinat_gps, catatan_kerja, foto_bukti)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ');
                     $ins->execute([
                         $attId ?: ('ATT-' . rand(1000, 9999)),
@@ -289,7 +307,10 @@ if ($method === 'POST') {
                         $checkInTime,
                         $checkOutTime,
                         $rec['mode'] ?? 'WFO - Kantor Pusat Jakarta',
-                        'Hadir Tepat Waktu'
+                        $statusHadir,
+                        $rec['gps'] ?? '-6.2249, 106.8096 • SCBD Jakarta (38m)',
+                        $rec['note'] ?? '',
+                        $rec['photo'] ?? null
                     ]);
                 }
                 jsonOut(['ok' => true]);

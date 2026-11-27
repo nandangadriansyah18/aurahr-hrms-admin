@@ -106,6 +106,9 @@ CREATE TABLE `attendances` (
   `jam_keluar` TIME DEFAULT NULL,
   `mode_kerja` VARCHAR(60) NOT NULL DEFAULT 'WFO - Kantor Pusat Jakarta',
   `status_hadir` ENUM('Hadir Tepat Waktu', 'Terlambat', 'Izin', 'Alpha') NOT NULL DEFAULT 'Hadir Tepat Waktu',
+  `koordinat_gps` VARCHAR(140) DEFAULT '-6.2249, 106.8096 • SCBD Jakarta (38m)',
+  `catatan_kerja` VARCHAR(255) DEFAULT NULL,
+  `foto_bukti` LONGTEXT DEFAULT NULL,
   PRIMARY KEY (`id_absensi`),
   KEY `idx_att_emp` (`id_karyawan`),
   CONSTRAINT `fk_att_emp` FOREIGN KEY (`id_karyawan`) REFERENCES `employees` (`id_karyawan`)
