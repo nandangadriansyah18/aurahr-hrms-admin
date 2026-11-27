@@ -298,11 +298,192 @@
       });
 
       document.getElementById('forgotPwdBtn').addEventListener('click', () => {
-        AuraApp.openModal({
-          title: 'Bantuan Akses Akun',
-          bodyHtml: '<p style="color:var(--text-secondary);">Jika Anda lupa kata sandi, silakan hubungi <strong>Administrator Sistem (Super Admin)</strong> untuk melakukan reset kata sandi pada menu Manajemen Role &amp; Divisi.</p>',
-          confirmText: 'Tutup'
-        });
+        let targetAcc = null;
+        let generatedOtp = '';
+        let otpTimer = null;
+
+        function clearOtpTimer() {
+          if (otpTimer) {
+            clearInterval(otpTimer);
+            otpTimer = null;
+          }
+        }
+
+        // STEP 1: Input Email atau NIP
+        function openStep1() {
+          clearOtpTimer();
+          AuraApp.openModal({
+            title: 'Reset Kata Sandi (1/3) — Verifikasi Akun',
+            bodyHtml: `
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <p style="font-size:0.83rem;color:var(--text-secondary);">
+                  Masukkan <strong>Email Kantor</strong> atau <strong>NIP</strong> Anda untuk menerima kode verifikasi OTP 6 digit.
+                </p>
+                <div class="form-group">
+                  <label class="form-label">Email Kantor atau NIP</label>
+                  <input type="text" id="otpIdentityInput" class="form-control" value="${idInput.value.trim()}" placeholder="Contoh: siti.rahma@aurahr.id atau AUR-0021" />
+                </div>
+                <div id="otpStep1Err" style="display:none;padding:9px 12px;border-radius:9px;background:var(--status-danger-bg);color:#B91C1C;font-size:0.78rem;font-weight:600;"></div>
+              </div>
+            `,
+            confirmText: 'Kirim Kode OTP →',
+            onConfirm: () => {
+              const q = document.getElementById('otpIdentityInput').value.trim().toLowerCase();
+              const errEl = document.getElementById('otpStep1Err');
+              if (!q) {
+                errEl.textContent = 'Mohon masukkan Email atau NIP Anda.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              const acc = AuraStore.getAccounts().find(a =>
+                a.email.toLowerCase() === q || a.nip.toLowerCase() === q
+              );
+              if (!acc) {
+                errEl.textContent = 'Akun dengan Email atau NIP tersebut tidak ditemukan.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              targetAcc = acc;
+              generatedOtp = String(Math.floor(100000 + Math.random() * 900000));
+              setTimeout(openStep2, 80);
+              return true;
+            }
+          });
+        }
+
+        // STEP 2: Input Kode OTP 6 Digit + Countdown Timer
+        function openStep2() {
+          clearOtpTimer();
+          let secondsLeft = 60;
+
+          AuraApp.showToast(`Kode OTP untuk ${targetAcc.email}: ${generatedOtp}`, 'success');
+
+          AuraApp.openModal({
+            title: 'Reset Kata Sandi (2/3) — Masukkan Kode OTP',
+            bodyHtml: `
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="padding:12px 14px;border-radius:12px;background:rgba(79,70,229,0.08);border:1px dashed rgba(79,70,229,0.35);display:flex;justify-content:space-between;align-items:center;">
+                  <div>
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--color-primary);text-transform:uppercase;">Pesan OTP Masuk (${targetAcc.email})</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary);">Gunakan kode 6 digit di samping untuk verifikasi:</div>
+                  </div>
+                  <span class="mono" id="otpPreviewCode" style="font-size:1.25rem;font-weight:800;letter-spacing:0.12em;color:var(--color-primary);background:#FFFFFF;padding:6px 12px;border-radius:8px;border:1px solid var(--border-subtle);">${generatedOtp}</span>
+                </div>
+
+                <div class="form-group">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <label class="form-label">Masukkan 6 Digit Kode OTP</label>
+                    <span class="mono" id="otpCountdownText" style="font-size:0.75rem;color:var(--text-secondary);">Berlaku: 60d</span>
+                  </div>
+                  <input type="text" id="otpCodeInput" class="form-control mono" maxlength="6" placeholder="000000" style="font-size:1.25rem;font-weight:700;letter-spacing:0.25em;text-align:center;" />
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;">
+                  <span style="color:var(--text-secondary);">Belum menerima kode?</span>
+                  <button type="button" id="resendOtpBtn" style="font-weight:700;color:var(--color-primary);">Kirim Ulang OTP Baru</button>
+                </div>
+
+                <div id="otpStep2Err" style="display:none;padding:9px 12px;border-radius:9px;background:var(--status-danger-bg);color:#B91C1C;font-size:0.78rem;font-weight:600;"></div>
+              </div>
+            `,
+            confirmText: 'Verifikasi OTP →',
+            onConfirm: () => {
+              const entered = document.getElementById('otpCodeInput').value.trim();
+              const errEl = document.getElementById('otpStep2Err');
+              if (secondsLeft <= 0) {
+                errEl.textContent = 'Kode OTP sudah kedaluwarsa. Silakan klik Kirim Ulang OTP Baru.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              if (entered !== generatedOtp) {
+                errEl.textContent = 'Kode OTP yang Anda masukkan tidak sesuai.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              clearOtpTimer();
+              setTimeout(openStep3, 80);
+              return true;
+            }
+          });
+
+          otpTimer = setInterval(() => {
+            secondsLeft--;
+            const cdEl = document.getElementById('otpCountdownText');
+            if (!cdEl) {
+              clearOtpTimer();
+              return;
+            }
+            if (secondsLeft > 0) {
+              cdEl.textContent = `Berlaku: ${secondsLeft}d`;
+            } else {
+              cdEl.textContent = 'Kedaluwarsa';
+              cdEl.style.color = 'var(--status-danger)';
+              clearOtpTimer();
+            }
+          }, 1000);
+
+          const resendBtn = document.getElementById('resendOtpBtn');
+          if (resendBtn) {
+            resendBtn.addEventListener('click', () => {
+              generatedOtp = String(Math.floor(100000 + Math.random() * 900000));
+              secondsLeft = 60;
+              const prevEl = document.getElementById('otpPreviewCode');
+              const cdEl = document.getElementById('otpCountdownText');
+              const errEl = document.getElementById('otpStep2Err');
+              if (prevEl) prevEl.textContent = generatedOtp;
+              if (cdEl) {
+                cdEl.textContent = 'Berlaku: 60d';
+                cdEl.style.color = 'var(--text-secondary)';
+              }
+              if (errEl) errEl.style.display = 'none';
+              AuraApp.showToast(`OTP baru dikirim: ${generatedOtp}`, 'success');
+            });
+          }
+        }
+
+        // STEP 3: Buat Kata Sandi Baru & Simpan ke Database MySQL
+        function openStep3() {
+          AuraApp.openModal({
+            title: `Reset Kata Sandi (3/3) — ${targetAcc.name}`,
+            bodyHtml: `
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="form-group">
+                  <label class="form-label">Kata Sandi Baru</label>
+                  <input type="password" id="otpNewPwd" class="form-control" placeholder="Minimal 4 karakter" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Konfirmasi Kata Sandi Baru</label>
+                  <input type="password" id="otpConfirmPwd" class="form-control" placeholder="Ulangi kata sandi baru" />
+                </div>
+                <div id="otpStep3Err" style="display:none;padding:9px 12px;border-radius:9px;background:var(--status-danger-bg);color:#B91C1C;font-size:0.78rem;font-weight:600;"></div>
+              </div>
+            `,
+            confirmText: 'Simpan Kata Sandi Baru',
+            onConfirm: () => {
+              const p1 = document.getElementById('otpNewPwd').value.trim();
+              const p2 = document.getElementById('otpConfirmPwd').value.trim();
+              const errEl = document.getElementById('otpStep3Err');
+              if (p1.length < 4) {
+                errEl.textContent = 'Kata sandi baru minimal 4 karakter.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              if (p1 !== p2) {
+                errEl.textContent = 'Konfirmasi kata sandi tidak cocok.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              AuraStore.resetAccountPassword(targetAcc.id, p1);
+              activateRoleTab(targetAcc.role);
+              idInput.value = targetAcc.email;
+              pwdInput.value = p1;
+              AuraApp.showToast(`Kata sandi ${targetAcc.name} berhasil diperbarui!`, 'success');
+              return true;
+            }
+          });
+        }
+
+        openStep1();
       });
 
       function redirectByRole(role) {
