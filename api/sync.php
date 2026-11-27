@@ -41,13 +41,41 @@ function resolvePositionId(PDO $pdo, string $posName, string $deptId, float $all
     return $idJab;
 }
 
+/**
+ * Simpan foto selfie base64 menjadi file fisik .jpg di folder uploads/presensi/
+ * sekaligus mengembalikan path relatifnya untuk disimpan ke database MySQL.
+ */
+function saveAttendancePhoto(?string $dataOrPath, string $attId, string $suffix): ?string {
+    if (!$dataOrPath) return null;
+    if (strpos($dataOrPath, 'data:image/') === 0) {
+        $parts = explode(',', $dataOrPath, 2);
+        if (count($parts) === 2) {
+            $bin = base64_decode($parts[1], true);
+            if ($bin !== false) {
+                $dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'presensi';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
+                $safeId = preg_replace('/[^A-Za-z0-9_-]/', '', $attId) ?: ('ATT-' . time());
+                $filename = $safeId . '_' . $suffix . '.jpg';
+                $fullPath = $dir . DIRECTORY_SEPARATOR . $filename;
+                if (@file_put_contents($fullPath, $bin) !== false) {
+                    return 'uploads/presensi/' . $filename;
+                }
+            }
+        }
+    }
+    return $dataOrPath;
+}
+
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// Auto-migrate kolom tambahan presensi (GPS, Catatan Harian, Foto Selfie) jika belum ada
+// Auto-migrate kolom tambahan presensi (GPS, Catatan Harian, Foto Masuk & Foto Pulang) jika belum ada
 try {
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS koordinat_gps VARCHAR(140) DEFAULT '-6.2249, 106.8096 • SCBD Jakarta (38m)'");
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS catatan_kerja VARCHAR(255) DEFAULT NULL");
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS foto_bukti LONGTEXT DEFAULT NULL");
+    $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS foto_keluar LONGTEXT DEFAULT NULL");
 } catch (Throwable $ignore) {
     // Abaikan jika sudah ada
 }
@@ -121,7 +149,8 @@ if ($method === 'GET') {
             a.status_hadir AS status,
             a.koordinat_gps AS gps,
             a.catatan_kerja AS note,
-            a.foto_bukti AS photo
+            a.foto_bukti AS photo,
+            a.foto_keluar AS photoOut
         FROM attendances a
         JOIN employees e ON a.id_karyawan = e.id_karyawan
         LEFT JOIN departments d ON e.id_dept = d.id_dept
@@ -142,6 +171,7 @@ if ($method === 'GET') {
             'gps'          => $a['gps'] ?: '-6.2249, 106.8096 • SCBD Jakarta (38m)',
             'note'         => $a['note'] ?: '',
             'photo'        => $a['photo'] ?: null,
+            'photoOut'     => $a['photoOut'] ?: null,
         ];
     }, $attRows);
 
@@ -285,14 +315,17 @@ if ($method === 'POST') {
                 if (!$emp) jsonOut(['ok' => false, 'error' => 'Pegawai tidak ditemukan'], 404);
 
                 $rec = $p['record'] ?? [];
-                $attId = (string)($rec['id'] ?? '');
+                $attId = (string)($rec['id'] ?? ('ATT-' . rand(1000, 9999)));
                 $checkInTime = str_replace(' WIB', '', (string)($rec['checkIn'] ?? date('H:i:s')));
                 $checkOutTime = !empty($rec['checkOut']) ? str_replace(' WIB', '', (string)$rec['checkOut']) : null;
 
                 if (($p['action'] ?? '') === 'checkout' && $attId !== '') {
-                    $upd = $pdo->prepare('UPDATE attendances SET jam_keluar = ?, catatan_kerja = COALESCE(NULLIF(?, \'\'), catatan_kerja), foto_bukti = COALESCE(NULLIF(?, \'\'), foto_bukti) WHERE id_absensi = ?');
-                    $upd->execute([$checkOutTime, (string)($rec['note'] ?? ''), (string)($rec['photo'] ?? ''), $attId]);
+                    $savedOutPhoto = saveAttendancePhoto($rec['photoOut'] ?? ($rec['photo'] ?? null), $attId, 'pulang');
+                    $upd = $pdo->prepare('UPDATE attendances SET jam_keluar = ?, catatan_kerja = COALESCE(NULLIF(?, \'\'), catatan_kerja), foto_keluar = COALESCE(?, foto_keluar) WHERE id_absensi = ?');
+                    $upd->execute([$checkOutTime, (string)($rec['note'] ?? ''), $savedOutPhoto, $attId]);
+                    jsonOut(['ok' => true, 'photoOut' => $savedOutPhoto]);
                 } else {
+                    $savedInPhoto = saveAttendancePhoto($rec['photo'] ?? null, $attId, 'masuk');
                     $statusHadir = in_array(($rec['status'] ?? ''), ['Hadir Tepat Waktu', 'Terlambat', 'Izin', 'Alpha'], true)
                         ? $rec['status']
                         : 'Hadir Tepat Waktu';
@@ -301,7 +334,7 @@ if ($method === 'POST') {
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ');
                     $ins->execute([
-                        $attId ?: ('ATT-' . rand(1000, 9999)),
+                        $attId,
                         $emp['id_karyawan'],
                         $rec['date'] ?? date('Y-m-d'),
                         $checkInTime,
@@ -310,10 +343,10 @@ if ($method === 'POST') {
                         $statusHadir,
                         $rec['gps'] ?? '-6.2249, 106.8096 • SCBD Jakarta (38m)',
                         $rec['note'] ?? '',
-                        $rec['photo'] ?? null
+                        $savedInPhoto
                     ]);
+                    jsonOut(['ok' => true, 'photo' => $savedInPhoto]);
                 }
-                jsonOut(['ok' => true]);
             }
 
             case 'addAccount': {

@@ -249,8 +249,8 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js"></script>
-  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/store.js?v=20261128"></script>
+  <script src="../assets/js/app.js?v=20261128"></script>
   <script>
     (function () {
       let currentLeaveFilter = 'All';
@@ -493,7 +493,7 @@
               <td>
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                   <span class="badge ${a.checkOut ? 'badge--active' : (a.status === 'Terlambat' ? 'badge--warning' : 'badge--info')}">${a.checkOut ? 'Selesai' : (a.status || 'Sedang Bekerja')}</span>
-                  ${a.photo ? `<button type="button" class="btn btn--sm btn--glass" style="padding:3px 8px;font-size:0.7rem;" data-hr-photo="${a.id}">📷 Foto</button>` : ''}
+                  ${(a.photo || a.photoOut) ? `<button type="button" class="btn btn--sm btn--glass" style="padding:3px 8px;font-size:0.7rem;" data-hr-photo="${a.id}">📷 Foto</button>` : ''}
                 </div>
               </td>
             </tr>
@@ -503,12 +503,18 @@
         tbody.querySelectorAll('[data-hr-photo]').forEach(btn => {
           btn.addEventListener('click', () => {
             const rec = logs.find(x => x.id === btn.dataset.hrPhoto);
-            if (!rec || !rec.photo) return;
+            if (!rec) return;
+            const resolveP = (p) => (!p ? null : (p.startsWith('data:') || p.startsWith('http') || p.startsWith('../') ? p : '../' + p));
+            const inImg = resolveP(rec.photo);
+            const outImg = resolveP(rec.photoOut);
             AuraApp.openModal({
               title: `Bukti Selfie & GPS — ${rec.employeeName || rec.nip}`,
               bodyHtml: `
                 <div style="display:flex;flex-direction:column;gap:10px;">
-                  <img src="${rec.photo}" alt="Foto Selfie Presensi" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);" />
+                  <div style="display:grid;grid-template-columns:${inImg && outImg ? '1fr 1fr' : '1fr'};gap:10px;">
+                    ${inImg ? `<div><div style="font-size:0.72rem;font-weight:700;margin-bottom:4px;">FOTO MASUK</div><img src="${inImg}" alt="Foto Masuk" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);" /></div>` : ''}
+                    ${outImg ? `<div><div style="font-size:0.72rem;font-weight:700;margin-bottom:4px;">FOTO PULANG</div><img src="${outImg}" alt="Foto Pulang" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);" /></div>` : ''}
+                  </div>
                   <div style="font-size:0.8rem;color:var(--text-secondary);">
                     <strong>Lokasi GPS:</strong> <span class="mono">${rec.gps || '-'}</span><br>
                     <strong>Catatan Kerja:</strong> ${rec.note || '-'}

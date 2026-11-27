@@ -265,8 +265,8 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js"></script>
-  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/store.js?v=20261128"></script>
+  <script src="../assets/js/app.js?v=20261128"></script>
   <script>
     (function () {
       const EMPLOYEE_NIP = 'AUR-0108';
@@ -608,14 +608,44 @@
         return canvas.toDataURL('image/jpeg', 0.84);
       }
 
+      function resolvePhotoSrc(pathOrData) {
+        if (!pathOrData) return null;
+        if (pathOrData.startsWith('data:') || pathOrData.startsWith('http') || pathOrData.startsWith('../')) {
+          return pathOrData;
+        }
+        return '../' + pathOrData;
+      }
+
       function openAttendanceProofModal(rec, emp) {
-        const fallbackImg = generateWatermarkedSnapshot(null, emp, rec.checkOut ? 'Bukti Presensi Selesai' : 'Bukti Check-In', rec.mode || 'WFO', rec.gps || currentGpsCoord);
-        const photoSrc = rec.photo || fallbackImg;
+        const inSrc = resolvePhotoSrc(rec.photo);
+        const outSrc = resolvePhotoSrc(rec.photoOut);
+        const fallbackImg = generateWatermarkedSnapshot(null, emp, rec.checkOut ? 'Arsip Presensi' : 'Arsip Check-In', rec.mode || 'WFO', rec.gps || currentGpsCoord);
+        const primaryImg = inSrc || fallbackImg;
+        const storageLabel = rec.photo
+          ? (rec.photo.startsWith('uploads/') ? `✓ Tersimpan di Server (${rec.photo}) & Database MySQL` : '✓ Tersimpan di Penyimpanan Lokal & Database')
+          : 'Data riwayat awal (sebelum fitur kamera diaktifkan)';
+
         AuraApp.openModal({
           title: `Bukti Verifikasi Presensi — ${AuraApp.formatDateIndo(rec.date)}`,
           bodyHtml: `
             <div style="display:flex;flex-direction:column;gap:12px;">
-              <img src="${photoSrc}" alt="Bukti Presensi" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);box-shadow:0 8px 24px rgba(15,23,42,0.12);" />
+              <div style="display:grid;grid-template-columns:${outSrc ? '1fr 1fr' : '1fr'};gap:10px;">
+                <div>
+                  <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">FOTO CHECK-IN MASUK</div>
+                  <img src="${primaryImg}" alt="Foto Check-In" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);box-shadow:0 8px 24px rgba(15,23,42,0.12);" />
+                  <a href="${primaryImg}" download="${rec.id}_masuk.jpg" style="display:inline-block;margin-top:5px;font-size:0.73rem;font-weight:700;color:var(--color-primary);">⬇ Unduh Foto Masuk (.jpg)</a>
+                </div>
+                ${outSrc ? `
+                  <div>
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">FOTO CHECK-OUT PULANG</div>
+                    <img src="${outSrc}" alt="Foto Check-Out" style="width:100%;border-radius:12px;border:1px solid var(--border-subtle);box-shadow:0 8px 24px rgba(15,23,42,0.12);" />
+                    <a href="${outSrc}" download="${rec.id}_pulang.jpg" style="display:inline-block;margin-top:5px;font-size:0.73rem;font-weight:700;color:var(--color-primary);">⬇ Unduh Foto Pulang (.jpg)</a>
+                  </div>
+                ` : ''}
+              </div>
+              <div style="font-size:0.73rem;font-weight:600;color:var(--status-success);padding:6px 10px;border-radius:8px;background:rgba(16,185,129,0.08);">
+                ${storageLabel}
+              </div>
               <div style="padding:11px 14px;border-radius:11px;background:#F8FAFC;border:1px solid var(--border-subtle);font-size:0.8rem;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                 <div><span style="color:var(--text-secondary);">Jam Masuk:</span><br><strong class="mono" style="color:var(--status-success);">${rec.checkIn}</strong></div>
                 <div><span style="color:var(--text-secondary);">Jam Keluar:</span><br><strong class="mono">${rec.checkOut || 'Masih Bekerja'}</strong></div>

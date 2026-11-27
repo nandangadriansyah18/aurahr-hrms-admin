@@ -43,11 +43,12 @@
     const url = getApiUrl();
     if (!url) return;
     try {
+      const bodyStr = JSON.stringify({ action, payload });
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload }),
-        keepalive: true
+        body: bodyStr,
+        keepalive: bodyStr.length < 55000
       }).catch(() => {});
     } catch (e) { /* ignore */ }
   }
@@ -405,7 +406,7 @@
       if (todayRec) {
         todayRec.checkOut = timeStr;
         if (extra.note) todayRec.note = extra.note;
-        if (extra.photo) todayRec.photo = extra.photo;
+        if (extra.photo) todayRec.photoOut = extra.photo;
         if (extra.gps) todayRec.gps = extra.gps;
         if (emp) {
           todayRec.employeeName = emp.name;
@@ -430,7 +431,8 @@
         status: autoStatus,
         gps: extra.gps || '-6.2249, 106.8096 • SCBD Jakarta (38m)',
         note: extra.note || '',
-        photo: extra.photo || null
+        photo: extra.photo || null,
+        photoOut: null
       };
       db.essAttendances.unshift(newRec);
       saveDB(db);
