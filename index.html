@@ -485,7 +485,7 @@
 
                 <div class="form-group">
                   <label class="form-label" for="otpCodeInput">Kode OTP 6 Digit dari WhatsApp</label>
-                  <input type="text" id="otpCodeInput" class="form-control mono" maxlength="6" placeholder="Masukkan 6 digit kode dari WA" style="font-size:1.2rem;font-weight:700;letter-spacing:0.22em;text-align:center;" />
+                  <input type="text" id="otpCodeInput" inputmode="numeric" class="form-control mono" maxlength="16" placeholder="Masukkan / Tempel 6 digit kode WA" style="font-size:1.2rem;font-weight:700;letter-spacing:0.22em;text-align:center;" />
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.77rem;">
@@ -498,10 +498,10 @@
             `,
             confirmText: 'Verifikasi Kode OTP →',
             onConfirm: () => {
-              const entered = document.getElementById('otpCodeInput').value.trim();
+              const entered = document.getElementById('otpCodeInput').value.replace(/\D+/g, '').slice(0, 6);
               const errEl = document.getElementById('otpStep2Err');
               if (!entered || entered.length < 6) {
-                errEl.textContent = 'Masukkan 6 digit kode OTP yang dikirim ke WhatsApp Anda.';
+                errEl.textContent = 'Masukkan 6 digit angka kode OTP yang dikirim ke WhatsApp Anda.';
                 errEl.style.display = 'block';
                 return false;
               }
@@ -527,6 +527,14 @@
           });
 
           updateStep2StatusUI(activeOtpReq.status, activeOtpReq.phone);
+
+          const otpInputBox = document.getElementById('otpCodeInput');
+          if (otpInputBox) {
+            otpInputBox.addEventListener('input', function () {
+              // Otomatis buang spasi/karakter bintang dari copy-paste WhatsApp dan ambil maksimal 6 angka
+              this.value = this.value.replace(/\D+/g, '').slice(0, 6);
+            });
+          }
 
           // Polling otomatis setiap 2,5 detik ke MySQL/Store untuk mendeteksi saat Super Admin klik Kirim WA
           otpPollInterval = setInterval(() => {
