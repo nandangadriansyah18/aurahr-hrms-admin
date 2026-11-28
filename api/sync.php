@@ -136,7 +136,8 @@ if ($method === 'GET') {
             l.tgl_selesai AS endDate,
             l.jumlah_hari AS days,
             l.alasan AS reason,
-            l.status_approval AS status
+            l.status_approval AS status,
+            DATE(l.created_at) AS createdDate
         FROM leave_requests l
         JOIN employees e ON l.id_karyawan = e.id_karyawan
         LEFT JOIN departments d ON e.id_dept = d.id_dept

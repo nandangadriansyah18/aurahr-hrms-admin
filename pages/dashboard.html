@@ -185,15 +185,26 @@
 
         <!-- ROW 3: INTERACTIVE LEAVE APPROVAL TABLE (CONNECTED TO ESS) -->
         <section class="glass-card">
-          <div class="section-head">
+          <div class="section-head" style="align-items:flex-start;flex-wrap:wrap;gap:12px;">
             <div>
               <h2 class="section-head__title">Pengajuan Cuti &amp; Izin Karyawan</h2>
-              <p class="section-head__sub">Pantau dan validasi permohonan cuti atau izin karyawan secara langsung.</p>
+              <p class="section-head__sub" id="leaveSectionSub">Menampilkan pengajuan cuti &amp; izin untuk Hari Ini.</p>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button type="button" class="btn btn--sm btn--primary" data-leave-filter="All">Semua</button>
-              <button type="button" class="btn btn--sm btn--glass" data-leave-filter="Pending">Menunggu Review</button>
-              <button type="button" class="btn btn--sm btn--glass" data-leave-filter="Approved">Disetujui</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <select id="leavePeriodSelect" class="form-control" style="width:auto;padding:6px 11px;font-size:0.78rem;font-weight:600;">
+                <option value="today" selected>📅 Hari Ini</option>
+                <option value="yesterday">Kemarin</option>
+                <option value="week">7 Hari Terakhir</option>
+                <option value="month">30 Hari Terakhir</option>
+                <option value="custom">Tanggal Pilihan</option>
+                <option value="all">Semua Periode</option>
+              </select>
+              <input type="date" id="leaveDatePicker" class="form-control mono" style="width:auto;padding:5px 10px;font-size:0.78rem;" title="Pilih tanggal spesifik pengajuan/cuti" />
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button type="button" class="btn btn--sm btn--primary" data-leave-filter="All">Semua</button>
+                <button type="button" class="btn btn--sm btn--glass" data-leave-filter="Pending">Menunggu Review</button>
+                <button type="button" class="btn btn--sm btn--glass" data-leave-filter="Approved">Disetujui</button>
+              </div>
             </div>
           </div>
 
@@ -217,10 +228,21 @@
 
         <!-- ROW 4: LIVE EMPLOYEE ATTENDANCE LOG (CHECK-IN / CHECK-OUT) -->
         <section class="glass-card">
-          <div class="section-head">
+          <div class="section-head" style="align-items:flex-start;flex-wrap:wrap;gap:12px;">
             <div>
               <h2 class="section-head__title">Log Presensi Masuk &amp; Keluar Karyawan</h2>
-              <p class="section-head__sub">Catatan waktu Check-In dan Check-Out terbaru dari portal karyawan.</p>
+              <p class="section-head__sub" id="attSectionSub">Menampilkan catatan Check-In dan Check-Out untuk Hari Ini.</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <select id="attPeriodSelect" class="form-control" style="width:auto;padding:6px 11px;font-size:0.78rem;font-weight:600;">
+                <option value="today" selected>📅 Hari Ini</option>
+                <option value="yesterday">Kemarin</option>
+                <option value="week">7 Hari Terakhir</option>
+                <option value="month">30 Hari Terakhir</option>
+                <option value="custom">Tanggal Pilihan</option>
+                <option value="all">Semua Periode</option>
+              </select>
+              <input type="date" id="attDatePicker" class="form-control mono" style="width:auto;padding:5px 10px;font-size:0.78rem;" title="Pilih tanggal spesifik presensi" />
             </div>
           </div>
 
@@ -249,11 +271,29 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js?v=20261128d"></script>
-  <script src="../assets/js/app.js?v=20261128d"></script>
+  <script src="../assets/js/store.js?v=20261128e"></script>
+  <script src="../assets/js/app.js?v=20261128e"></script>
   <script>
     (function () {
+      function toLocalIso(d = new Date()) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+
+      function offsetDateIso(daysOffset) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysOffset);
+        return toLocalIso(d);
+      }
+
+      const todayIso = toLocalIso(new Date());
       let currentLeaveFilter = 'All';
+      let currentLeavePeriod = 'today';
+      let currentLeaveDate = todayIso;
+      let currentAttPeriod = 'today';
+      let currentAttDate = todayIso;
       let currentChartRange = 'daily7';
       let lineChartInstance = null;
       let doughnutChartInstance = null;
@@ -394,13 +434,54 @@
         }).join('');
       }
 
+      function filterLeaveByPeriod(list) {
+        const tIso = toLocalIso(new Date());
+        const yIso = offsetDateIso(-1);
+        const wIso = offsetDateIso(-6);
+        const mIso = offsetDateIso(-29);
+
+        if (currentLeavePeriod === 'all') {
+          return { rows: list, label: 'Semua Periode' };
+        }
+        if (currentLeavePeriod === 'week') {
+          const rows = list.filter(l => {
+            const cDate = l.createdDate || l.startDate;
+            return (l.startDate <= tIso && l.endDate >= wIso) || (cDate >= wIso && cDate <= tIso);
+          });
+          return { rows, label: `7 Hari Terakhir (${AuraApp.formatDateIndo(wIso)} – ${AuraApp.formatDateIndo(tIso)})` };
+        }
+        if (currentLeavePeriod === 'month') {
+          const rows = list.filter(l => {
+            const cDate = l.createdDate || l.startDate;
+            return (l.startDate <= tIso && l.endDate >= mIso) || (cDate >= mIso && cDate <= tIso);
+          });
+          return { rows, label: `30 Hari Terakhir (${AuraApp.formatDateIndo(mIso)} – ${AuraApp.formatDateIndo(tIso)})` };
+        }
+
+        const targetDate = currentLeavePeriod === 'today'
+          ? tIso
+          : (currentLeavePeriod === 'yesterday' ? yIso : currentLeaveDate);
+        const rows = list.filter(l => {
+          const inLeaveRange = l.startDate <= targetDate && l.endDate >= targetDate;
+          const submittedOnDate = l.createdDate && l.createdDate === targetDate;
+          return inLeaveRange || submittedOnDate;
+        });
+        const prefix = currentLeavePeriod === 'today' ? 'Hari Ini' : (currentLeavePeriod === 'yesterday' ? 'Kemarin' : 'Tanggal');
+        return { rows, label: `${prefix} (${AuraApp.formatDateIndo(targetDate)})` };
+      }
+
       function renderLeaveTable() {
         const all = AuraStore.getLeaveRequests();
-        const filtered = currentLeaveFilter === 'All' ? all : all.filter(l => l.status === currentLeaveFilter);
+        const byStatus = currentLeaveFilter === 'All' ? all : all.filter(l => l.status === currentLeaveFilter);
+        const { rows: filtered, label: periodLabel } = filterLeaveByPeriod(byStatus);
         const tbody = document.getElementById('leaveApprovalTbody');
+        const subEl = document.getElementById('leaveSectionSub');
+        if (subEl) {
+          subEl.textContent = `Menampilkan ${filtered.length} pengajuan cuti/izin • Filter: ${periodLabel}`;
+        }
 
         if (filtered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-secondary);">Tidak ada data pengajuan cuti pada kategori ini.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-secondary);">Tidak ada pengajuan cuti/izin pada <strong>${periodLabel}</strong>. Silakan pilih Kemarin, 7 Hari Terakhir, 30 Hari Terakhir, atau tanggal lain di atas.</td></tr>`;
           return;
         }
 
@@ -431,7 +512,7 @@
               <td><strong>${item.type}</strong></td>
               <td>
                 <div>${AuraApp.formatDateIndo(item.startDate)} – ${AuraApp.formatDateIndo(item.endDate)}</div>
-                <div style="font-size:0.74rem;color:var(--text-secondary);">${item.days} Hari Kerja</div>
+                <div style="font-size:0.73rem;color:var(--text-secondary);">${item.days} Hari Kerja${item.createdDate ? ` • Diajukan ${AuraApp.formatDateIndo(item.createdDate)}` : ''}</div>
               </td>
               <td style="max-width:260px;">${item.reason}</td>
               <td>${badgeHtml}</td>
@@ -472,6 +553,37 @@
         });
       });
 
+      const leavePeriodSel = document.getElementById('leavePeriodSelect');
+      const leaveDateInput = document.getElementById('leaveDatePicker');
+      if (leaveDateInput) leaveDateInput.value = todayIso;
+
+      if (leavePeriodSel) {
+        leavePeriodSel.addEventListener('change', () => {
+          currentLeavePeriod = leavePeriodSel.value;
+          if (currentLeavePeriod === 'today' && leaveDateInput) {
+            currentLeaveDate = toLocalIso(new Date());
+            leaveDateInput.value = currentLeaveDate;
+          } else if (currentLeavePeriod === 'yesterday' && leaveDateInput) {
+            currentLeaveDate = offsetDateIso(-1);
+            leaveDateInput.value = currentLeaveDate;
+          }
+          renderLeaveTable();
+        });
+      }
+      if (leaveDateInput) {
+        leaveDateInput.addEventListener('change', () => {
+          if (!leaveDateInput.value) return;
+          currentLeaveDate = leaveDateInput.value;
+          const tIso = toLocalIso(new Date());
+          const yIso = offsetDateIso(-1);
+          if (currentLeaveDate === tIso) currentLeavePeriod = 'today';
+          else if (currentLeaveDate === yIso) currentLeavePeriod = 'yesterday';
+          else currentLeavePeriod = 'custom';
+          if (leavePeriodSel) leavePeriodSel.value = currentLeavePeriod;
+          renderLeaveTable();
+        });
+      }
+
       document.querySelectorAll('[data-chart-range]').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('[data-chart-range]').forEach(b => {
@@ -482,13 +594,75 @@
         });
       });
 
+      function filterAttendanceByPeriod(allLogs) {
+        const tIso = toLocalIso(new Date());
+        const yIso = offsetDateIso(-1);
+        const wIso = offsetDateIso(-6);
+        const mIso = offsetDateIso(-29);
+
+        if (currentAttPeriod === 'all') {
+          return { rows: allLogs, label: 'Semua Periode' };
+        }
+        if (currentAttPeriod === 'week') {
+          const rows = allLogs.filter(a => a.date >= wIso && a.date <= tIso);
+          return { rows, label: `7 Hari Terakhir (${AuraApp.formatDateIndo(wIso)} – ${AuraApp.formatDateIndo(tIso)})` };
+        }
+        if (currentAttPeriod === 'month') {
+          const rows = allLogs.filter(a => a.date >= mIso && a.date <= tIso);
+          return { rows, label: `30 Hari Terakhir (${AuraApp.formatDateIndo(mIso)} – ${AuraApp.formatDateIndo(tIso)})` };
+        }
+
+        const targetDate = currentAttPeriod === 'today'
+          ? tIso
+          : (currentAttPeriod === 'yesterday' ? yIso : currentAttDate);
+        const rows = allLogs.filter(a => a.date === targetDate);
+        const prefix = currentAttPeriod === 'today' ? 'Hari Ini' : (currentAttPeriod === 'yesterday' ? 'Kemarin' : 'Tanggal');
+        return { rows, label: `${prefix} (${AuraApp.formatDateIndo(targetDate)})` };
+      }
+
+      const attPeriodSel = document.getElementById('attPeriodSelect');
+      const attDateInput = document.getElementById('attDatePicker');
+      if (attDateInput) attDateInput.value = todayIso;
+
+      if (attPeriodSel) {
+        attPeriodSel.addEventListener('change', () => {
+          currentAttPeriod = attPeriodSel.value;
+          if (currentAttPeriod === 'today' && attDateInput) {
+            currentAttDate = toLocalIso(new Date());
+            attDateInput.value = currentAttDate;
+          } else if (currentAttPeriod === 'yesterday' && attDateInput) {
+            currentAttDate = offsetDateIso(-1);
+            attDateInput.value = currentAttDate;
+          }
+          renderAttendanceLog();
+        });
+      }
+      if (attDateInput) {
+        attDateInput.addEventListener('change', () => {
+          if (!attDateInput.value) return;
+          currentAttDate = attDateInput.value;
+          const tIso = toLocalIso(new Date());
+          const yIso = offsetDateIso(-1);
+          if (currentAttDate === tIso) currentAttPeriod = 'today';
+          else if (currentAttDate === yIso) currentAttPeriod = 'yesterday';
+          else currentAttPeriod = 'custom';
+          if (attPeriodSel) attPeriodSel.value = currentAttPeriod;
+          renderAttendanceLog();
+        });
+      }
+
       function renderAttendanceLog() {
-        const logs = AuraStore.getEssAttendances().slice(0, 8);
+        const allLogs = AuraStore.getEssAttendances();
+        const { rows: logs, label: periodLabel } = filterAttendanceByPeriod(allLogs);
         const emps = AuraStore.getEmployees();
         const tbody = document.getElementById('hrAttendanceLogTbody');
+        const subEl = document.getElementById('attSectionSub');
+        if (subEl) {
+          subEl.textContent = `Menampilkan ${logs.length} log presensi karyawan • Filter: ${periodLabel}`;
+        }
         if (!tbody) return;
         if (logs.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada catatan presensi.</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--text-secondary);">Belum ada catatan presensi pada <strong>${periodLabel}</strong>. Pilih Kemarin, 7 Hari Terakhir, 30 Hari Terakhir, atau tanggal lain di atas untuk melihat riwayat sebelumnya.</td></tr>`;
           return;
         }
         tbody.innerHTML = logs.map(a => {

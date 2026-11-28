@@ -379,7 +379,8 @@
         endDate: req.endDate,
         days: diffDays,
         reason: req.reason,
-        status: 'Pending'
+        status: 'Pending',
+        createdDate: formatLocalIsoDate(new Date())
       };
       db.leaveRequests.unshift(item);
       saveDB(db);
