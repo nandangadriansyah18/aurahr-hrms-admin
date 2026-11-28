@@ -247,6 +247,7 @@
                   <a href="${pagePrefix}/manajemen-role.html" class="sidebar__link ${activePage === 'rbac' ? 'is-active' : ''}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     <span>Manajemen Role &amp; Divisi</span>
+                    ${metrics.pendingOtps > 0 ? `<span class="sidebar__badge" id="sidebarOtpBadge" style="background:#EF4444;color:#FFFFFF;">${metrics.pendingOtps}</span>` : `<span class="sidebar__badge" id="sidebarOtpBadge" style="display:none;background:#EF4444;color:#FFFFFF;">0</span>`}
                   </a>
                 </li>
               </ul>
@@ -266,8 +267,9 @@
     if (roleEl) roleEl.textContent = session.role === 'SUPER_ADMIN' ? 'Super Admin' : (session.role === 'HR' ? 'HR Management' : 'Karyawan');
     if (avatarEl) avatarEl.textContent = initials(session.name);
     if (notifBadge) {
-      notifBadge.textContent = metrics.pendingLeaves;
-      notifBadge.style.display = metrics.pendingLeaves > 0 ? 'grid' : 'none';
+      const totalNotif = session.role === 'SUPER_ADMIN' ? (metrics.pendingLeaves + (metrics.pendingOtps || 0)) : metrics.pendingLeaves;
+      notifBadge.textContent = totalNotif;
+      notifBadge.style.display = totalNotif > 0 ? 'grid' : 'none';
     }
 
     // Sidebar Toggle (Desktop Collapse + Mobile Off-Canvas Drawer)
@@ -290,33 +292,110 @@
       });
     }
 
-    // Notification Button Modal
+    // Notification Button Modal (Leave Requests + Super Admin OTP Requests)
     const notifBtn = document.getElementById('topbarNotifBtn');
-    if (notifBtn) {
+    if (notifBtn && !notifBtn.dataset.boundNotif) {
+      notifBtn.dataset.boundNotif = '1';
       notifBtn.addEventListener('click', () => {
-        const pending = window.AuraStore.getLeaveRequests().filter(l => l.status === 'Pending');
-        const listHtml = pending.length === 0
-          ? '<p style="color:var(--text-secondary);">Tidak ada pengajuan cuti yang menunggu persetujuan saat ini.</p>'
-          : `<div style="display:flex;flex-direction:column;gap:10px;">
-              ${pending.map(p => `
-                <div style="padding:12px;border-radius:12px;background:#F8FAFC;border:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;gap:10px;">
-                  <div>
-                    <div style="font-weight:700;">${p.employeeName} <span class="mono" style="font-size:0.75rem;color:var(--text-secondary);">(${p.nip})</span></div>
-                    <div style="font-size:0.78rem;color:var(--text-secondary);">${p.type} • ${formatDateIndo(p.startDate)} – ${formatDateIndo(p.endDate)} (${p.days} hari)</div>
-                  </div>
-                  <span class="badge badge--warning">Pending</span>
+        window.AuraStore.syncFromServerAsync().then(() => {
+          const curSession = window.AuraStore.getSession() || session;
+          const pendingLeaves = window.AuraStore.getLeaveRequests().filter(l => l.status === 'Pending');
+          const pendingOtps = curSession.role === 'SUPER_ADMIN'
+            ? window.AuraStore.getOtpRequests().filter(o => o.status === 'Pending')
+            : [];
+
+          let htmlParts = [];
+
+          if (curSession.role === 'SUPER_ADMIN' && pendingOtps.length > 0) {
+            htmlParts.push(`
+              <div style="margin-bottom:14px;">
+                <div style="font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#DC2626;margin-bottom:8px;">
+                  🔐 Permintaan Kode OTP Reset Sandi (${pendingOtps.length})
                 </div>
-              `).join('')}
-            </div>`;
-        openModal({
-          title: `Pengajuan Cuti Masuk (${pending.length})`,
-          bodyHtml: listHtml,
-          confirmText: 'Kelola di Dashboard',
-          onConfirm: () => {
-            window.location.href = `${pagePrefix}/dashboard.html`;
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${pendingOtps.map(o => `
+                    <div style="padding:12px;border-radius:12px;background:#FEF2F2;border:1px solid #FECACA;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <div>
+                        <div style="font-weight:700;">${o.name} <span class="mono" style="font-size:0.74rem;color:var(--text-secondary);">(${o.nip})</span></div>
+                        <div style="font-size:0.76rem;color:var(--text-secondary);">WA Tujuan: <strong class="mono">${o.phone}</strong> • OTP: <strong class="mono" style="color:var(--color-primary);">${o.code}</strong></div>
+                      </div>
+                      <button type="button" class="btn btn--sm btn--success" data-quick-wa-otp="${o.id}">📲 Kirim via WA</button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `);
           }
+
+          if (pendingLeaves.length > 0) {
+            htmlParts.push(`
+              <div>
+                <div style="font-size:0.74rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary);margin-bottom:8px;">
+                  📅 Pengajuan Cuti Menunggu Persetujuan (${pendingLeaves.length})
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${pendingLeaves.map(p => `
+                    <div style="padding:11px 12px;border-radius:12px;background:#F8FAFC;border:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                      <div>
+                        <div style="font-weight:700;">${p.employeeName} <span class="mono" style="font-size:0.75rem;color:var(--text-secondary);">(${p.nip})</span></div>
+                        <div style="font-size:0.78rem;color:var(--text-secondary);">${p.type} • ${formatDateIndo(p.startDate)} – ${formatDateIndo(p.endDate)} (${p.days} hari)</div>
+                      </div>
+                      <span class="badge badge--warning">Pending</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `);
+          }
+
+          const listHtml = htmlParts.length === 0
+            ? '<p style="color:var(--text-secondary);">Tidak ada notifikasi permintaan OTP maupun pengajuan cuti baru saat ini.</p>'
+            : htmlParts.join('');
+
+          const goOtpPage = curSession.role === 'SUPER_ADMIN' && pendingOtps.length > 0;
+          openModal({
+            title: `Pusat Notifikasi (${pendingOtps.length + pendingLeaves.length})`,
+            bodyHtml: listHtml,
+            confirmText: goOtpPage ? 'Buka Panel OTP Super Admin' : 'Kelola di Dashboard',
+            onConfirm: () => {
+              window.location.href = goOtpPage ? `${pagePrefix}/manajemen-role.html` : `${pagePrefix}/dashboard.html`;
+            }
+          });
+
+          document.querySelectorAll('[data-quick-wa-otp]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const otpItem = window.AuraStore.approveOtpRequest(btn.dataset.quickWaOtp);
+              if (otpItem) {
+                const waUrl = window.AuraStore.buildWhatsAppOtpUrl(otpItem.phone, otpItem.name, otpItem.nip, otpItem.code);
+                window.open(waUrl, '_blank', 'noopener');
+                showToast(`Membuka WhatsApp untuk mengirim OTP ke ${otpItem.name}!`, 'success');
+                initShell();
+              }
+            });
+          });
         });
       });
+
+      // Live background sync untuk lencana notifikasi Super Admin
+      if (session.role === 'SUPER_ADMIN' && !window.__auraAdminPollStarted) {
+        window.__auraAdminPollStarted = true;
+        setInterval(() => {
+          window.AuraStore.syncFromServerAsync().then(() => {
+            const m = window.AuraStore.getMetrics();
+            const nb = document.getElementById('topbarNotifCount');
+            const sb = document.getElementById('sidebarOtpBadge');
+            const tot = m.pendingLeaves + (m.pendingOtps || 0);
+            if (nb) {
+              nb.textContent = tot;
+              nb.style.display = tot > 0 ? 'grid' : 'none';
+            }
+            if (sb) {
+              sb.textContent = m.pendingOtps || 0;
+              sb.style.display = (m.pendingOtps || 0) > 0 ? 'inline-flex' : 'none';
+            }
+          });
+        }, 4000);
+      }
     }
 
     // Logout Buttons

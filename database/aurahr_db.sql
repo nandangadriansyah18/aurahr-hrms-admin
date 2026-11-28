@@ -152,6 +152,23 @@ CREATE TABLE `payrolls` (
     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------------------------------------------------------
+-- 8. Tabel OTP_REQUESTS (Permintaan Reset Sandi via Super Admin & WhatsApp)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `otp_requests` (
+  `id_otp` VARCHAR(24) NOT NULL,
+  `id_user` VARCHAR(20) NOT NULL,
+  `nip` VARCHAR(20) NOT NULL,
+  `nama_user` VARCHAR(120) NOT NULL,
+  `email_user` VARCHAR(120) NOT NULL,
+  `no_wa` VARCHAR(30) NOT NULL,
+  `kode_otp` VARCHAR(10) NOT NULL,
+  `status_otp` ENUM('Pending', 'Sent', 'Completed', 'Rejected') NOT NULL DEFAULT 'Pending',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_otp`),
+  KEY `idx_otp_user` (`id_user`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ============================================================================
 -- SEED DATA AWAL PERUSAHAAN
 -- ============================================================================

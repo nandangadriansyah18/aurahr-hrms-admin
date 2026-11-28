@@ -70,17 +70,36 @@ function saveAttendancePhoto(?string $dataOrPath, string $attId, string $suffix)
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// Auto-migrate kolom tambahan presensi (GPS, Catatan Harian, Foto Masuk & Foto Pulang) jika belum ada
+// Auto-migrate kolom tambahan presensi & tabel otp_requests (Super Admin WA OTP) jika belum ada
 try {
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS koordinat_gps VARCHAR(140) DEFAULT '-6.2249, 106.8096 • SCBD Jakarta (38m)'");
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS catatan_kerja VARCHAR(255) DEFAULT NULL");
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS foto_bukti LONGTEXT DEFAULT NULL");
     $pdo->exec("ALTER TABLE attendances ADD COLUMN IF NOT EXISTS foto_keluar LONGTEXT DEFAULT NULL");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS otp_requests (
+            id_otp VARCHAR(24) NOT NULL PRIMARY KEY,
+            id_user VARCHAR(20) NOT NULL,
+            nip VARCHAR(20) NOT NULL,
+            nama_user VARCHAR(120) NOT NULL,
+            email_user VARCHAR(120) NOT NULL,
+            no_wa VARCHAR(30) NOT NULL,
+            kode_otp VARCHAR(10) NOT NULL,
+            status_otp ENUM('Pending', 'Sent', 'Completed', 'Rejected') NOT NULL DEFAULT 'Pending',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
 } catch (Throwable $ignore) {
     // Abaikan jika sudah ada
 }
 
 if ($method === 'GET') {
+    if (!empty($_GET['checkOtp'])) {
+        $chkStmt = $pdo->prepare('SELECT id_otp AS id, id_user AS userId, nip, nama_user AS name, email_user AS email, no_wa AS phone, kode_otp AS code, status_otp AS status, created_at AS createdAt FROM otp_requests WHERE id_otp = ? LIMIT 1');
+        $chkStmt->execute([(string)$_GET['checkOtp']]);
+        $otpRow = $chkStmt->fetch();
+        jsonOut(['ok' => true, 'otp' => $otpRow ?: null]);
+    }
     $depts = $pdo->query('SELECT id_dept AS id, kode_dept AS code, nama_dept AS name, kepala_divisi AS head, kuota_formasi AS quota FROM departments ORDER BY nama_dept ASC')->fetchAll();
     foreach ($depts as &$d) {
         $d['quota'] = (int)$d['quota'];
@@ -215,6 +234,22 @@ if ($method === 'GET') {
         ];
     }, $accRows);
 
+    $otpRows = $pdo->query("
+        SELECT
+            id_otp AS id,
+            id_user AS userId,
+            nip,
+            nama_user AS name,
+            email_user AS email,
+            no_wa AS phone,
+            kode_otp AS code,
+            status_otp AS status,
+            DATE_FORMAT(created_at, '%d %b %Y, %H:%i WIB') AS requestedAt
+        FROM otp_requests
+        ORDER BY created_at DESC
+        LIMIT 30
+    ")->fetchAll();
+
     jsonOut([
         'ok' => true,
         'db' => [
@@ -223,6 +258,7 @@ if ($method === 'GET') {
             'leaveRequests'  => $leaveRequests,
             'essAttendances' => $essAttendances,
             'accounts'       => $accounts,
+            'otpRequests'    => $otpRows,
         ],
     ]);
 }
@@ -396,6 +432,49 @@ if ($method === 'POST') {
             case 'resetAccountPassword': {
                 $stmt = $pdo->prepare('UPDATE user_accounts SET password_hash = ? WHERE id_user = ?');
                 $stmt->execute([$p['password'] ?? 'password123', $p['id'] ?? '']);
+                jsonOut(['ok' => true]);
+            }
+
+            case 'createOtpRequest': {
+                $userId = (string)($p['userId'] ?? '');
+                // Batalkan permintaan OTP lama yang belum selesai untuk akun yang sama
+                if ($userId !== '') {
+                    $delOld = $pdo->prepare("DELETE FROM otp_requests WHERE id_user = ? AND status_otp IN ('Pending', 'Sent')");
+                    $delOld->execute([$userId]);
+                }
+                $ins = $pdo->prepare("
+                    INSERT INTO otp_requests (id_otp, id_user, nip, nama_user, email_user, no_wa, kode_otp, status_otp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
+                ");
+                $ins->execute([
+                    $p['id'],
+                    $userId,
+                    $p['nip'] ?? '-',
+                    $p['name'] ?? '-',
+                    $p['email'] ?? '-',
+                    $p['phone'] ?? '',
+                    $p['code'] ?? '123456'
+                ]);
+                jsonOut(['ok' => true]);
+            }
+
+            case 'approveOtpRequest': {
+                $stmt = $pdo->prepare("UPDATE otp_requests SET status_otp = 'Sent', no_wa = COALESCE(NULLIF(?, ''), no_wa) WHERE id_otp = ?");
+                $stmt->execute([(string)($p['phone'] ?? ''), $p['id'] ?? '']);
+                jsonOut(['ok' => true]);
+            }
+
+            case 'rejectOtpRequest': {
+                $stmt = $pdo->prepare("UPDATE otp_requests SET status_otp = 'Rejected' WHERE id_otp = ?");
+                $stmt->execute([$p['id'] ?? '']);
+                jsonOut(['ok' => true]);
+            }
+
+            case 'completeOtpReset': {
+                $updUser = $pdo->prepare('UPDATE user_accounts SET password_hash = ? WHERE id_user = ?');
+                $updUser->execute([$p['password'] ?? 'password123', $p['userId'] ?? '']);
+                $updOtp = $pdo->prepare("UPDATE otp_requests SET status_otp = 'Completed' WHERE id_otp = ?");
+                $updOtp->execute([$p['otpId'] ?? '']);
                 jsonOut(['ok' => true]);
             }
 

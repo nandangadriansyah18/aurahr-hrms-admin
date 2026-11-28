@@ -162,7 +162,8 @@
       { id: 'ACC-04', nip: 'AUR-0108', name: 'Budi Santoso, S.T.', email: 'budi.santoso@aurahr.id', password: 'password123', role: 'KARYAWAN', lastLogin: 'Hari ini, 07:56 WIB', active: true },
       { id: 'ACC-05', nip: 'AUR-0115', name: 'Nadia Kusuma Putri', email: 'nadia.putri@aurahr.id', password: 'password123', role: 'KARYAWAN', lastLogin: 'Hari ini, 08:04 WIB', active: true },
       { id: 'ACC-06', nip: 'AUR-0288', name: 'Bagas Mahendra', email: 'bagas.mahendra@aurahr.id', password: 'password123', role: 'KARYAWAN', lastLogin: '12 Okt 2026', active: false }
-    ]
+    ],
+    otpRequests: []
   };
 
   function clone(obj) {
@@ -181,6 +182,7 @@
 
     const remoteDb = fetchInitialFromPhp();
     if (remoteDb) {
+      remoteDb.otpRequests = remoteDb.otpRequests || [];
       memoryCache = remoteDb;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteDb)); } catch (e) { /* ignore */ }
       return memoryCache;
@@ -195,6 +197,7 @@
         return memoryCache;
       }
       const parsed = JSON.parse(raw);
+      parsed.otpRequests = parsed.otpRequests || [];
       let repaired = false;
       if (Array.isArray(parsed.employees)) {
         parsed.employees.forEach((e, idx) => {
@@ -527,6 +530,124 @@
       return acc;
     },
 
+    /* ---------------- SUPER ADMIN <-> WHATSAPP OTP RESET ---------------- */
+    syncFromServerAsync() {
+      const url = getApiUrl();
+      if (!url) {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) memoryCache = JSON.parse(raw);
+        } catch (e) { /* ignore */ }
+        return Promise.resolve(loadDB());
+      }
+      return fetch(url + '?t=' + Date.now())
+        .then(r => r.json())
+        .then(res => {
+          if (res && res.ok && res.db) {
+            remoteEnabled = true;
+            res.db.otpRequests = res.db.otpRequests || [];
+            memoryCache = res.db;
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(res.db)); } catch (e) { /* ignore */ }
+          }
+          return loadDB();
+        })
+        .catch(() => loadDB());
+    },
+
+    checkOtpStatusAsync(otpId) {
+      const url = getApiUrl();
+      if (!url) {
+        return this.syncFromServerAsync().then(db => (db.otpRequests || []).find(o => o.id === otpId) || null);
+      }
+      return fetch(url + '?checkOtp=' + encodeURIComponent(otpId) + '&t=' + Date.now())
+        .then(r => r.json())
+        .then(res => (res && res.ok ? res.otp : null))
+        .catch(() => {
+          const db = loadDB();
+          return (db.otpRequests || []).find(o => o.id === otpId) || null;
+        });
+    },
+
+    getOtpRequests() {
+      const db = loadDB();
+      return db.otpRequests || [];
+    },
+
+    createOtpRequest({ userId, nip, name, email, phone }) {
+      const db = loadDB();
+      db.otpRequests = (db.otpRequests || []).filter(o => !(o.userId === userId && (o.status === 'Pending' || o.status === 'Sent')));
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const now = new Date();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const reqItem = {
+        id: 'OTP-' + Date.now().toString(36).slice(-5).toUpperCase(),
+        userId,
+        nip: nip || '-',
+        name: name || email,
+        email: email || '-',
+        phone: String(phone || '').trim(),
+        code,
+        status: 'Pending',
+        requestedAt: `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`
+      };
+      db.otpRequests.unshift(reqItem);
+      saveDB(db);
+      pushToPhp('createOtpRequest', reqItem);
+      return reqItem;
+    },
+
+    approveOtpRequest(otpId, updatedPhone) {
+      const db = loadDB();
+      const item = (db.otpRequests || []).find(o => o.id === otpId);
+      if (item) {
+        item.status = 'Sent';
+        if (updatedPhone) item.phone = String(updatedPhone).trim();
+        saveDB(db);
+        pushToPhp('approveOtpRequest', { id: otpId, phone: item.phone });
+      }
+      return item;
+    },
+
+    rejectOtpRequest(otpId) {
+      const db = loadDB();
+      const item = (db.otpRequests || []).find(o => o.id === otpId);
+      if (item) {
+        item.status = 'Rejected';
+        saveDB(db);
+        pushToPhp('rejectOtpRequest', { id: otpId });
+      }
+      return item;
+    },
+
+    completeOtpReset(otpId, userId, newPassword) {
+      const db = loadDB();
+      const cleanPwd = String(newPassword || 'password123').trim();
+      const acc = db.accounts.find(a => a.id === userId);
+      if (acc) acc.password = cleanPwd;
+      const item = (db.otpRequests || []).find(o => o.id === otpId);
+      if (item) item.status = 'Completed';
+      saveDB(db);
+      pushToPhp('completeOtpReset', { otpId, userId, password: cleanPwd });
+      return acc;
+    },
+
+    buildWhatsAppOtpUrl(phone, userName, nip, otpCode) {
+      let digits = String(phone || '').replace(/\D+/g, '');
+      if (digits.startsWith('0')) digits = '62' + digits.slice(1);
+      else if (digits.startsWith('8')) digits = '62' + digits;
+      const msg = [
+        '*[AuraHR Security — Kode OTP Reset Sandi]*',
+        '',
+        `Halo *${userName}* (${nip}),`,
+        'Permintaan reset kata sandi akun AuraHR Anda telah disetujui oleh Super Admin.',
+        '',
+        `🔑 Kode OTP Anda: *${otpCode}*`,
+        '',
+        'Silakan masukkan 6 digit kode OTP di atas pada halaman Login AuraHR untuk membuat kata sandi baru. Jangan berikan kode ini kepada pihak lain.'
+      ].join('\n');
+      return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+    },
+
     addDepartment(payload) {
       const db = loadDB();
       const dept = {
@@ -593,6 +714,7 @@
         : '0';
 
       const pendingLeaves = db.leaveRequests.filter(l => l.status === 'Pending').length;
+      const pendingOtps = (db.otpRequests || []).filter(o => o.status === 'Pending').length;
       const totalPayroll = activeEmps.reduce((s, e) => {
         const gross = Number(e.baseSalary || 0) + Number(e.allowance || 0);
         return s + Math.round(gross * 0.95);
@@ -603,6 +725,7 @@
         todayPresentCount,
         avgAttendance: todayRate,
         pendingLeaves,
+        pendingOtps,
         totalPayroll
       };
     },

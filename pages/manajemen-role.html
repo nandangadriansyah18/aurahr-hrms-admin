@@ -79,6 +79,33 @@
           </div>
         </section>
 
+        <!-- PANEL PERMINTAAN RESET SANDI & KIRIM KODE OTP WHATSAPP -->
+        <section class="glass-card glass-card--elevated" id="otpRequestsSection" style="border-color:rgba(79,70,229,0.24);">
+          <div class="section-head" style="align-items:center;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h2 class="section-head__title">🔐 Permintaan Kode OTP Reset Kata Sandi (WhatsApp)</h2>
+              <p class="section-head__sub">Permintaan lupa sandi dari pengguna akan masuk ke sini secara real-time untuk dikirimkan kode OTP melalui WhatsApp resmi.</p>
+            </div>
+            <span class="badge badge--info" id="otpPendingCounterBadge">0 Permintaan Baru</span>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Pemohon</th>
+                  <th>Nomor WhatsApp Tujuan</th>
+                  <th>Kode OTP (6 Digit)</th>
+                  <th>Waktu Permintaan</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Tindakan Super Admin</th>
+                </tr>
+              </thead>
+              <tbody id="otpRequestsTbody"></tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- 3 RBAC SUMMARY CARDS -->
         <section class="kpi-grid kpi-grid--3">
           <article class="glass-card stat-card">
@@ -156,11 +183,102 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js?v=20261128f"></script>
-  <script src="../assets/js/app.js?v=20261128f"></script>
+  <script src="../assets/js/store.js?v=20261128g"></script>
+  <script src="../assets/js/app.js?v=20261128g"></script>
   <script>
     (function () {
+      function renderOtpRequestsTable() {
+        const otpList = AuraStore.getOtpRequests();
+        const pendingCount = otpList.filter(o => o.status === 'Pending').length;
+        const badgeEl = document.getElementById('otpPendingCounterBadge');
+        if (badgeEl) {
+          badgeEl.textContent = pendingCount > 0 ? `${pendingCount} Menunggu Dikirim WA` : 'Tidak Ada Antrean Baru';
+          badgeEl.className = pendingCount > 0 ? 'badge badge--warning' : 'badge badge--active';
+        }
+
+        const otpTbody = document.getElementById('otpRequestsTbody');
+        if (!otpTbody) return;
+
+        if (otpList.length === 0) {
+          otpTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--text-secondary);">Belum ada permintaan kode OTP lupa kata sandi dari pengguna.</td></tr>`;
+          return;
+        }
+
+        otpTbody.innerHTML = otpList.map(req => {
+          let statusBadge = '<span class="badge badge--warning">Menunggu Dikirim</span>';
+          if (req.status === 'Sent') statusBadge = '<span class="badge badge--info">Terkirim ke WA</span>';
+          if (req.status === 'Completed') statusBadge = '<span class="badge badge--active">Sandi Diperbarui</span>';
+          if (req.status === 'Rejected') statusBadge = '<span class="badge badge--danger">Ditolak</span>';
+
+          let actions = '<span style="font-size:0.75rem;color:var(--text-muted);">Selesai</span>';
+          if (req.status === 'Pending') {
+            actions = `
+              <div style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
+                <button type="button" class="btn btn--sm btn--success" data-send-wa-otp="${req.id}">📲 Kirim OTP via WA</button>
+                <button type="button" class="btn btn--sm btn--glass" style="color:var(--status-danger);" data-reject-otp="${req.id}">Tolak</button>
+              </div>
+            `;
+          } else if (req.status === 'Sent') {
+            actions = `
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <button type="button" class="btn btn--sm btn--glass" data-send-wa-otp="${req.id}">📲 Kirim Ulang WA</button>
+              </div>
+            `;
+          }
+
+          return `
+            <tr>
+              <td>
+                <div class="emp-cell">
+                  <div class="avatar">${AuraApp.initials(req.name)}</div>
+                  <div>
+                    <div class="emp-cell__name">${req.name}</div>
+                    <div class="emp-cell__email">${req.nip} • ${req.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="form-control mono" data-otp-phone-input="${req.id}" value="${req.phone}" style="padding:5px 10px;font-size:0.78rem;max-width:165px;" ${req.status === 'Completed' || req.status === 'Rejected' ? 'disabled' : ''} />
+              </td>
+              <td>
+                <span class="mono" style="display:inline-block;padding:4px 10px;border-radius:8px;background:rgba(79,70,229,0.09);color:var(--color-primary);font-weight:800;letter-spacing:0.12em;">${req.code}</span>
+              </td>
+              <td style="font-size:0.77rem;color:var(--text-secondary);">${req.requestedAt || 'Baru saja'}</td>
+              <td>${statusBadge}</td>
+              <td style="text-align:right;">${actions}</td>
+            </tr>
+          `;
+        }).join('');
+
+        otpTbody.querySelectorAll('[data-send-wa-otp]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.sendWaOtp;
+            const phoneEl = otpTbody.querySelector(`[data-otp-phone-input="${id}"]`);
+            const phoneVal = phoneEl ? phoneEl.value.trim() : '';
+            const updated = AuraStore.approveOtpRequest(id, phoneVal);
+            if (!updated) return;
+            const waUrl = AuraStore.buildWhatsAppOtpUrl(updated.phone, updated.name, updated.nip, updated.code);
+            window.open(waUrl, '_blank', 'noopener');
+            AuraApp.showToast(`Membuka WhatsApp ke ${updated.phone} dengan Kode OTP ${updated.code}!`, 'success');
+            AuraApp.initShell();
+            renderOtpRequestsTable();
+          });
+        });
+
+        otpTbody.querySelectorAll('[data-reject-otp]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const updated = AuraStore.rejectOtpRequest(btn.dataset.rejectOtp);
+            if (updated) {
+              AuraApp.showToast(`Permintaan OTP dari ${updated.name} ditolak.`, 'warning');
+              AuraApp.initShell();
+              renderOtpRequestsTable();
+            }
+          });
+        });
+      }
+
       function renderRbacPage() {
+        renderOtpRequestsTable();
         const session = AuraStore.getSession();
         const banner = document.getElementById('rbacGuardBanner');
         banner.style.display = session.role !== 'SUPER_ADMIN' ? 'flex' : 'none';
@@ -426,7 +544,17 @@
         });
       });
 
-      document.addEventListener('DOMContentLoaded', renderRbacPage);
+      document.addEventListener('DOMContentLoaded', () => {
+        renderRbacPage();
+        // Auto-sync permintaan OTP baru setiap 3,5 detik (tidak mengganggu jika Super Admin sedang mengetik nomor WA)
+        setInterval(() => {
+          const activeTag = document.activeElement ? document.activeElement.tagName : '';
+          if (activeTag === 'INPUT' || activeTag === 'SELECT') return;
+          AuraStore.syncFromServerAsync().then(() => {
+            renderOtpRequestsTable();
+          });
+        }, 3500);
+      });
     })();
   </script>
 </body>

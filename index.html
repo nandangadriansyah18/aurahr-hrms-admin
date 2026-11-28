@@ -256,8 +256,8 @@
     </div>
   </main>
 
-  <script src="./assets/js/store.js?v=20261128f"></script>
-  <script src="./assets/js/app.js?v=20261128f"></script>
+  <script src="./assets/js/store.js?v=20261128g"></script>
+  <script src="./assets/js/app.js?v=20261128g"></script>
   <script>
     (function () {
       let selectedRole = 'HR';
@@ -346,96 +346,59 @@
 
       document.getElementById('forgotPwdBtn').addEventListener('click', () => {
         let targetAcc = null;
-        let generatedOtp = '';
-        let otpTimer = null;
+        let activeOtpReq = null;
+        let otpPollInterval = null;
 
-        function clearOtpTimer() {
-          if (otpTimer) {
-            clearInterval(otpTimer);
-            otpTimer = null;
+        function stopOtpPolling() {
+          if (otpPollInterval) {
+            clearInterval(otpPollInterval);
+            otpPollInterval = null;
           }
         }
 
-        function removeEmailPopup() {
-          const old = document.getElementById('liveEmailOtpPopup');
-          if (old) old.remove();
+        function findPhoneForAccount(acc) {
+          if (!acc) return '';
+          const emp = AuraStore.getEmployees().find(e => e.nip === acc.nip || e.email.toLowerCase() === acc.email.toLowerCase());
+          return emp && emp.phone ? emp.phone : '';
         }
 
-        function showEmailPopup(acc, otpCode) {
-          removeEmailPopup();
-          const popup = document.createElement('div');
-          popup.id = 'liveEmailOtpPopup';
-          popup.className = 'email-inbox-popup';
-          popup.innerHTML = `
-            <div class="email-inbox-popup__bar">
-              <span style="display:flex;align-items:center;gap:7px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                <span>Kotak Masuk Email • Baru Saja</span>
-              </span>
-              <button type="button" id="closeEmailPopupBtn" style="color:#FFFFFF;opacity:0.8;font-size:0.85rem;" title="Tutup">✕</button>
-            </div>
-            <div class="email-inbox-popup__body">
-              <div style="border-bottom:1px solid var(--border-subtle);padding-bottom:8px;">
-                <div style="font-weight:800;font-size:0.83rem;color:var(--text-primary);">[AuraHR] Kode OTP Reset Kata Sandi</div>
-                <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">
-                  Dari: <strong>no-reply@aurahr.id</strong><br>
-                  Kepada: <strong>${acc.email}</strong>
-                </div>
-              </div>
-              <p style="font-size:0.77rem;color:var(--text-secondary);line-height:1.45;">
-                Halo <strong>${acc.name}</strong>, salin kode OTP 6 digit berikut untuk memverifikasi pengaturan ulang kata sandi Anda:
-              </p>
-              <div class="email-inbox-popup__codebox">
-                <span class="mono" id="popupOtpValue" style="font-size:1.35rem;font-weight:800;letter-spacing:0.16em;color:var(--color-primary);">${otpCode}</span>
-                <button type="button" id="copyOtpEmailBtn" class="btn btn--sm btn--primary" style="padding:6px 12px;">
-                  Salin Kode
-                </button>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(popup);
-
-          popup.querySelector('#closeEmailPopupBtn').addEventListener('click', removeEmailPopup);
-          const copyBtn = popup.querySelector('#copyOtpEmailBtn');
-          copyBtn.addEventListener('click', () => {
-            const currentCode = popup.querySelector('#popupOtpValue').textContent.trim();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(currentCode).catch(() => {});
-            }
-            copyBtn.textContent = '✓ Tersalin!';
-            copyBtn.className = 'btn btn--sm btn--success';
-            setTimeout(() => {
-              if (copyBtn) {
-                copyBtn.textContent = 'Salin Kode';
-                copyBtn.className = 'btn btn--sm btn--primary';
-              }
-            }, 1800);
-          });
-        }
-
-        // STEP 1: Input Email atau NIP
+        // STEP 1: Input Email/NIP + Nomor WhatsApp -> Kirim Permintaan ke Super Admin
         function openStep1() {
-          clearOtpTimer();
+          stopOtpPolling();
+          const initialId = idInput.value.trim();
+          const preAcc = AuraStore.getAccounts().find(a =>
+            a.email.toLowerCase() === initialId.toLowerCase() || a.nip.toLowerCase() === initialId.toLowerCase()
+          );
+          const initialPhone = findPhoneForAccount(preAcc);
+
           AuraApp.openModal({
-            title: 'Reset Kata Sandi (1/3) — Verifikasi Akun',
+            title: 'Reset Kata Sandi (1/3) — Minta OTP ke Super Admin',
             bodyHtml: `
               <div style="display:flex;flex-direction:column;gap:12px;">
-                <p style="font-size:0.83rem;color:var(--text-secondary);">
-                  Masukkan <strong>Email Kantor</strong> atau <strong>NIP</strong> Anda untuk menerima kode verifikasi OTP 6 digit.
+                <p style="font-size:0.81rem;color:var(--text-secondary);line-height:1.5;">
+                  Permintaan kode OTP akan dikirim ke <strong>Super Admin</strong>. Setelah disetujui Super Admin, kode OTP 6 digit akan dikirim langsung ke <strong>WhatsApp</strong> Anda.
                 </p>
                 <div class="form-group">
-                  <label class="form-label">Email Kantor atau NIP</label>
-                  <input type="text" id="otpIdentityInput" class="form-control" value="${idInput.value.trim()}" placeholder="Contoh: siti.rahma@aurahr.id atau AUR-0021" />
+                  <label class="form-label" for="otpIdentityInput">Email Kantor atau NIP <span class="req">*</span></label>
+                  <input type="text" id="otpIdentityInput" class="form-control" value="${initialId}" placeholder="Contoh: siti.rahma@aurahr.id atau AUR-0021" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="otpWaInput">Nomor WhatsApp Penerima OTP <span class="req">*</span></label>
+                  <input type="tel" id="otpWaInput" class="form-control mono" value="${initialPhone}" placeholder="Contoh: 081288001021" />
+                  <span class="form-hint">Pastikan nomor WhatsApp aktif untuk menerima pesan kode OTP dari Super Admin.</span>
                 </div>
                 <div id="otpStep1Err" style="display:none;padding:9px 12px;border-radius:9px;background:var(--status-danger-bg);color:#B91C1C;font-size:0.78rem;font-weight:600;"></div>
               </div>
             `,
-            confirmText: 'Kirim Kode OTP →',
+            confirmText: 'Minta Kode OTP ke Super Admin →',
             onConfirm: () => {
               const q = document.getElementById('otpIdentityInput').value.trim().toLowerCase();
+              const waRaw = document.getElementById('otpWaInput').value.trim();
+              const waDigits = waRaw.replace(/\D+/g, '');
               const errEl = document.getElementById('otpStep1Err');
+
               if (!q) {
-                errEl.textContent = 'Mohon masukkan Email atau NIP Anda.';
+                errEl.textContent = 'Mohon masukkan Email Kantor atau NIP Anda.';
                 errEl.style.display = 'block';
                 return false;
               }
@@ -447,95 +410,149 @@
                 errEl.style.display = 'block';
                 return false;
               }
+              if (waDigits.length < 9) {
+                errEl.textContent = 'Masukkan nomor WhatsApp aktif yang valid (minimal 9 digit).';
+                errEl.style.display = 'block';
+                return false;
+              }
+
               targetAcc = acc;
-              generatedOtp = String(Math.floor(100000 + Math.random() * 900000));
+              activeOtpReq = AuraStore.createOtpRequest({
+                userId: acc.id,
+                nip: acc.nip,
+                name: acc.name,
+                email: acc.email,
+                phone: waRaw
+              });
+              AuraApp.showToast('Permintaan OTP berhasil dikirim ke Super Admin!', 'info');
               setTimeout(openStep2, 80);
               return true;
             }
           });
+
+          const idBox = document.getElementById('otpIdentityInput');
+          const waBox = document.getElementById('otpWaInput');
+          if (idBox && waBox) {
+            idBox.addEventListener('input', () => {
+              const v = idBox.value.trim().toLowerCase();
+              const matched = AuraStore.getAccounts().find(a => a.email.toLowerCase() === v || a.nip.toLowerCase() === v);
+              const ph = findPhoneForAccount(matched);
+              if (ph) waBox.value = ph;
+            });
+          }
         }
 
-        // STEP 2: Input Kode OTP 6 Digit + Countdown Timer
-        function openStep2() {
-          clearOtpTimer();
-          let secondsLeft = 60;
+        // STEP 2: Menunggu Super Admin Kirim WA + Input 6 Digit Kode OTP dari WhatsApp
+        function updateStep2StatusUI(status, phoneStr) {
+          const banner = document.getElementById('otpLiveStatusBox');
+          if (!banner) return false;
+          if (status === 'Sent') {
+            banner.style.background = '#ECFDF5';
+            banner.style.borderColor = '#A7F3D0';
+            banner.style.color = '#065F46';
+            banner.innerHTML = `
+              <div style="font-weight:800;font-size:0.82rem;margin-bottom:3px;">✅ Kode OTP Telah Dikirim ke WhatsApp!</div>
+              <div style="font-size:0.76rem;line-height:1.45;">Super Admin telah menyetujui permintaan Anda dan mengirimkan kode ke WhatsApp <strong>${phoneStr}</strong>. Silakan masukkan 6 digit kode tersebut di bawah ini.</div>
+            `;
+          } else if (status === 'Rejected') {
+            banner.style.background = '#FEF2F2';
+            banner.style.borderColor = '#FECACA';
+            banner.style.color = '#991B1B';
+            banner.innerHTML = `
+              <div style="font-weight:800;font-size:0.82rem;margin-bottom:3px;">❌ Permintaan Ditolak Super Admin</div>
+              <div style="font-size:0.76rem;line-height:1.45;">Permintaan reset sandi Anda ditolak oleh Super Admin. Silakan hubungi administrator atau ajukan ulang.</div>
+            `;
+          } else {
+            banner.style.background = '#FFFBEB';
+            banner.style.borderColor = '#FDE68A';
+            banner.style.color = '#92400E';
+            banner.innerHTML = `
+              <div style="font-weight:800;font-size:0.82rem;margin-bottom:3px;">⏳ Menunggu Super Admin Mengirim OTP via WhatsApp...</div>
+              <div style="font-size:0.76rem;line-height:1.45;">Notifikasi permintaan telah masuk ke panel <strong>Super Admin</strong>. Begitu Super Admin klik <em>Kirim via WhatsApp</em>, pesan kode OTP akan masuk ke nomor <strong>${phoneStr}</strong>.</div>
+            `;
+          }
+          return true;
+        }
 
-          showEmailPopup(targetAcc, generatedOtp);
+        function openStep2() {
+          stopOtpPolling();
 
           AuraApp.openModal({
-            title: 'Reset Kata Sandi (2/3) — Verifikasi OTP Email',
+            title: 'Reset Kata Sandi (2/3) — Masukkan OTP WhatsApp',
             bodyHtml: `
               <div style="display:flex;flex-direction:column;gap:14px;">
-                <p style="font-size:0.81rem;color:var(--text-secondary);">
-                  Email berisi kode OTP telah dikirim ke <strong>${targetAcc.email}</strong> (lihat pop-up email masuk di pojok kanan atas layar, klik <strong>Salin Kode</strong> lalu tempel di bawah ini).
-                </p>
+                <div id="otpLiveStatusBox" style="padding:11px 13px;border-radius:11px;border:1px solid #FDE68A;background:#FFFBEB;color:#92400E;transition:all 0.25s ease;"></div>
 
                 <div class="form-group">
-                  <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <label class="form-label">Masukkan 6 Digit Kode OTP</label>
-                    <span class="mono" id="otpCountdownText" style="font-size:0.75rem;color:var(--text-secondary);">Berlaku: 60d</span>
-                  </div>
-                  <input type="text" id="otpCodeInput" class="form-control mono" maxlength="6" placeholder="Tempel (Ctrl+V) kode 6 digit" style="font-size:1.2rem;font-weight:700;letter-spacing:0.22em;text-align:center;" />
+                  <label class="form-label" for="otpCodeInput">Kode OTP 6 Digit dari WhatsApp</label>
+                  <input type="text" id="otpCodeInput" class="form-control mono" maxlength="6" placeholder="Masukkan 6 digit kode dari WA" style="font-size:1.2rem;font-weight:700;letter-spacing:0.22em;text-align:center;" />
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;">
-                  <span style="color:var(--text-secondary);">Belum menerima email?</span>
-                  <button type="button" id="resendOtpBtn" style="font-weight:700;color:var(--color-primary);">Kirim Ulang Email OTP</button>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.77rem;">
+                  <span style="color:var(--text-secondary);">Salah nomor WhatsApp?</span>
+                  <button type="button" id="backStep1OtpBtn" style="font-weight:700;color:var(--color-primary);">← Ganti Nomor / Minta Ulang</button>
                 </div>
 
                 <div id="otpStep2Err" style="display:none;padding:9px 12px;border-radius:9px;background:var(--status-danger-bg);color:#B91C1C;font-size:0.78rem;font-weight:600;"></div>
               </div>
             `,
-            confirmText: 'Verifikasi OTP →',
+            confirmText: 'Verifikasi Kode OTP →',
             onConfirm: () => {
               const entered = document.getElementById('otpCodeInput').value.trim();
               const errEl = document.getElementById('otpStep2Err');
-              if (secondsLeft <= 0) {
-                errEl.textContent = 'Kode OTP sudah kedaluwarsa. Silakan klik Kirim Ulang Email OTP.';
+              if (!entered || entered.length < 6) {
+                errEl.textContent = 'Masukkan 6 digit kode OTP yang dikirim ke WhatsApp Anda.';
                 errEl.style.display = 'block';
                 return false;
               }
-              if (entered !== generatedOtp) {
-                errEl.textContent = 'Kode OTP yang Anda masukkan tidak sesuai.';
+              if (activeOtpReq.status === 'Rejected') {
+                errEl.textContent = 'Permintaan OTP ini telah ditolak oleh Super Admin.';
                 errEl.style.display = 'block';
                 return false;
               }
-              clearOtpTimer();
-              removeEmailPopup();
+              if (activeOtpReq.status === 'Pending') {
+                errEl.textContent = 'Permintaan masih menunggu persetujuan Super Admin. Minta Super Admin klik "Kirim OTP via WhatsApp" terlebih dahulu.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              if (entered !== String(activeOtpReq.code)) {
+                errEl.textContent = 'Kode OTP yang Anda masukkan tidak sesuai dengan yang dikirim ke WhatsApp.';
+                errEl.style.display = 'block';
+                return false;
+              }
+              stopOtpPolling();
               setTimeout(openStep3, 80);
               return true;
             }
           });
 
-          otpTimer = setInterval(() => {
-            secondsLeft--;
-            const cdEl = document.getElementById('otpCountdownText');
-            if (!cdEl) {
-              clearOtpTimer();
+          updateStep2StatusUI(activeOtpReq.status, activeOtpReq.phone);
+
+          // Polling otomatis setiap 2,5 detik ke MySQL/Store untuk mendeteksi saat Super Admin klik Kirim WA
+          otpPollInterval = setInterval(() => {
+            if (!document.getElementById('otpLiveStatusBox')) {
+              stopOtpPolling();
               return;
             }
-            if (secondsLeft > 0) {
-              cdEl.textContent = `Berlaku: ${secondsLeft}d`;
-            } else {
-              cdEl.textContent = 'Kedaluwarsa';
-              cdEl.style.color = 'var(--status-danger)';
-              clearOtpTimer();
-            }
-          }, 1000);
-
-          const resendBtn = document.getElementById('resendOtpBtn');
-          if (resendBtn) {
-            resendBtn.addEventListener('click', () => {
-              generatedOtp = String(Math.floor(100000 + Math.random() * 900000));
-              secondsLeft = 60;
-              showEmailPopup(targetAcc, generatedOtp);
-              const cdEl = document.getElementById('otpCountdownText');
-              const errEl = document.getElementById('otpStep2Err');
-              if (cdEl) {
-                cdEl.textContent = 'Berlaku: 60d';
-                cdEl.style.color = 'var(--text-secondary)';
+            AuraStore.checkOtpStatusAsync(activeOtpReq.id).then(fresh => {
+              if (fresh) {
+                activeOtpReq.status = fresh.status;
+                activeOtpReq.code = fresh.code;
+                activeOtpReq.phone = fresh.phone || activeOtpReq.phone;
+                updateStep2StatusUI(activeOtpReq.status, activeOtpReq.phone);
               }
-              if (errEl) errEl.style.display = 'none';
+            });
+          }, 2500);
+
+          document.querySelectorAll('#auraModalOverlay [data-modal-close]').forEach(btn => {
+            btn.addEventListener('click', stopOtpPolling, { once: true });
+          });
+
+          const backBtn = document.getElementById('backStep1OtpBtn');
+          if (backBtn) {
+            backBtn.addEventListener('click', () => {
+              stopOtpPolling();
+              openStep1();
             });
           }
         }
@@ -578,11 +595,11 @@
                 errEl.style.display = 'block';
                 return false;
               }
-              AuraStore.resetAccountPassword(targetAcc.id, p1);
+              AuraStore.completeOtpReset(activeOtpReq.id, targetAcc.id, p1);
               activateRoleTab(targetAcc.role);
               idInput.value = targetAcc.email;
               pwdInput.value = p1;
-              AuraApp.showToast(`Kata sandi ${targetAcc.name} berhasil diperbarui!`, 'success');
+              AuraApp.showToast(`Kata sandi ${targetAcc.name} berhasil diperbarui! Silakan masuk.`, 'success');
               return true;
             }
           });
