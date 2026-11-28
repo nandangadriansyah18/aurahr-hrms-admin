@@ -120,7 +120,7 @@
             </div>
             <div class="stat-card__value" id="kpiAttendanceRate">0%</div>
             <div class="stat-card__meta">
-              <span class="badge badge--active">+1.8% vs bulan lalu</span>
+              <span class="badge badge--active" id="kpiAttendanceMeta">0 / 0 Hadir Hari Ini</span>
             </div>
           </article>
 
@@ -156,12 +156,12 @@
           <article class="glass-card">
             <div class="section-head">
               <div>
-                <h2 class="section-head__title">Tren Tingkat Kehadiran Bulanan</h2>
-                <p class="section-head__sub">Rata-rata persentase presensi terverifikasi vs target SLA SDM (90%)</p>
+                <h2 class="section-head__title" id="attChartTitle">Tren Tingkat Kehadiran Real-Time</h2>
+                <p class="section-head__sub" id="attChartSub">Dihitung langsung dari log Check-In karyawan aktif vs target SLA SDM (90%)</p>
               </div>
               <div style="display:flex;gap:6px;">
-                <button type="button" class="btn btn--sm btn--glass" data-chart-range="weekly">Mingguan</button>
-                <button type="button" class="btn btn--sm btn--primary" data-chart-range="monthly">6 Bulan</button>
+                <button type="button" class="btn btn--sm btn--primary" data-chart-range="daily7">7 Hari Terakhir</button>
+                <button type="button" class="btn btn--sm btn--glass" data-chart-range="monthly">6 Bulan</button>
               </div>
             </div>
             <div style="position:relative;height:270px;">
@@ -249,11 +249,12 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js?v=20261128"></script>
-  <script src="../assets/js/app.js?v=20261128"></script>
+  <script src="../assets/js/store.js?v=20261128d"></script>
+  <script src="../assets/js/app.js?v=20261128d"></script>
   <script>
     (function () {
       let currentLeaveFilter = 'All';
+      let currentChartRange = 'daily7';
       let lineChartInstance = null;
       let doughnutChartInstance = null;
 
@@ -266,21 +267,32 @@
         document.getElementById('kpiActiveEmployees').textContent = m.activeCount;
         document.getElementById('kpiTotalMeta').textContent = `${m.totalCount} Terdaftar`;
         document.getElementById('kpiAttendanceRate').textContent = `${m.avgAttendance}%`;
+        const attMetaEl = document.getElementById('kpiAttendanceMeta');
+        if (attMetaEl) {
+          attMetaEl.textContent = `${m.todayPresentCount} / ${m.activeCount} Hadir Hari Ini`;
+          attMetaEl.className = m.todayPresentCount > 0 ? 'badge badge--active' : 'badge badge--warning';
+        }
         document.getElementById('kpiPendingLeaves').textContent = m.pendingLeaves;
         document.getElementById('kpiPendingBadge').textContent = m.pendingLeaves > 0 ? `${m.pendingLeaves} Perlu Review` : 'Semua Terproses';
         document.getElementById('kpiPayrollTotal').textContent = AuraApp.formatCompactRupiah(m.totalPayroll);
       }
 
-      function renderCharts(rangeMode = 'monthly') {
+      function renderCharts(rangeMode = currentChartRange) {
+        currentChartRange = rangeMode;
         if (typeof Chart === 'undefined') return;
 
-        const labels = rangeMode === 'weekly'
-          ? ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4', 'Minggu Ini']
-          : ['Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov'];
-        const actualData = rangeMode === 'weekly'
-          ? [93.2, 94.8, 92.9, 95.6, Number(AuraStore.getMetrics().avgAttendance)]
-          : [92.4, 93.8, 94.1, 93.5, 95.2, Number(AuraStore.getMetrics().avgAttendance)];
+        const analytics = AuraStore.getAttendanceAnalytics(rangeMode);
+        const labels = analytics.labels;
+        const actualData = analytics.rates;
+        const detailTooltips = analytics.details;
         const targetData = labels.map(() => 90);
+
+        const subEl = document.getElementById('attChartSub');
+        if (subEl) {
+          subEl.textContent = rangeMode === 'monthly'
+            ? 'Persentase hari-orang hadir per bulan dari tabel database attendances vs Target SLA (90%)'
+            : `Persentase karyawan aktif hadir per hari (Total ${analytics.activeCount} personel aktif) vs Target SLA (90%)`;
+        }
 
         const lineCtx = document.getElementById('attendanceLineChart').getContext('2d');
         if (lineChartInstance) lineChartInstance.destroy();
@@ -300,9 +312,10 @@
                 borderColor: '#4F46E5',
                 backgroundColor: grad,
                 borderWidth: 3,
-                tension: 0.38,
+                tension: 0.35,
                 fill: true,
-                pointRadius: 4,
+                pointRadius: 5,
+                pointHoverRadius: 7,
                 pointBackgroundColor: '#FFFFFF',
                 pointBorderColor: '#4F46E5',
                 pointBorderWidth: 2.5
@@ -322,10 +335,20 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }
+              legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => {
+                    if (ctx.datasetIndex === 0) {
+                      return ` ${ctx.parsed.y}% (${detailTooltips[ctx.dataIndex] || ''})`;
+                    }
+                    return ` Target SLA: ${ctx.parsed.y}%`;
+                  }
+                }
+              }
             },
             scales: {
-              y: { min: 85, max: 100, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(148,163,184,0.16)' } },
+              y: { min: 0, max: 100, ticks: { stepSize: 20, callback: v => v + '%' }, grid: { color: 'rgba(148,163,184,0.16)' } },
               x: { grid: { display: false } }
             }
           }
@@ -529,7 +552,7 @@
 
       document.addEventListener('DOMContentLoaded', () => {
         renderMetricsAndGreeting();
-        renderCharts('monthly');
+        renderCharts('daily7');
         renderLeaveTable();
         renderAttendanceLog();
       });

@@ -169,6 +169,13 @@
     return JSON.parse(JSON.stringify(obj));
   }
 
+  function formatLocalIsoDate(d = new Date()) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   function loadDB() {
     if (memoryCache) return memoryCache;
 
@@ -401,7 +408,7 @@
       const emp = db.employees.find(e => e.nip === nip);
       const now = new Date();
       const timeStr = now.toTimeString().slice(0, 8) + ' WIB';
-      const todayIso = now.toISOString().slice(0, 10);
+      const todayIso = formatLocalIsoDate(now);
       let todayRec = db.essAttendances.find(a => a.nip === nip && !a.checkOut);
       if (todayRec) {
         todayRec.checkOut = timeStr;
@@ -566,13 +573,24 @@
       return d;
     },
 
-    /* ---------------- DASHBOARD SUMMARY METRICS ---------------- */
+    /* ---------------- DASHBOARD SUMMARY METRICS & REAL ATTENDANCE ANALYTICS ---------------- */
     getMetrics() {
       const db = loadDB();
       const activeEmps = db.employees.filter(e => e.active && e.contract !== 'Nonaktif');
-      const avgAtt = activeEmps.length
-        ? (activeEmps.reduce((s, e) => s + Number(e.attendanceRate || 95), 0) / activeEmps.length).toFixed(1)
-        : '0.0';
+      const activeNips = new Set(activeEmps.map(e => e.nip));
+      const todayIso = formatLocalIsoDate(new Date());
+
+      // Hitung karyawan aktif yang benar-benar sudah Check-In hari ini
+      const todayPresentSet = new Set(
+        (db.essAttendances || [])
+          .filter(a => a.date === todayIso && (!activeNips.size || activeNips.has(a.nip)))
+          .map(a => a.nip)
+      );
+      const todayPresentCount = todayPresentSet.size;
+      const todayRate = activeEmps.length
+        ? ((todayPresentCount / activeEmps.length) * 100).toFixed(1).replace(/\.0$/, '')
+        : '0';
+
       const pendingLeaves = db.leaveRequests.filter(l => l.status === 'Pending').length;
       const totalPayroll = activeEmps.reduce((s, e) => {
         const gross = Number(e.baseSalary || 0) + Number(e.allowance || 0);
@@ -581,10 +599,57 @@
       return {
         activeCount: activeEmps.length,
         totalCount: db.employees.length,
-        avgAttendance: avgAtt,
+        todayPresentCount,
+        avgAttendance: todayRate,
         pendingLeaves,
         totalPayroll
       };
+    },
+
+    getAttendanceAnalytics(rangeMode = 'daily7') {
+      const db = loadDB();
+      const activeEmps = db.employees.filter(e => e.active && e.contract !== 'Nonaktif');
+      const denom = Math.max(1, activeEmps.length);
+      const logs = db.essAttendances || [];
+      const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const now = new Date();
+
+      if (rangeMode === 'monthly') {
+        const labels = [];
+        const rates = [];
+        const details = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          labels.push(`${monthsShort[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`);
+          // Hitung unik pasangan (nip + tanggal) pada bulan tersebut dibanding kapasitas kerja (denom * 22 hari kerja)
+          const uniqueEmpDays = new Set(
+            logs.filter(a => String(a.date || '').startsWith(ym)).map(a => `${a.nip}|${a.date}`)
+          ).size;
+          const targetCapacity = denom * 22;
+          const pct = Number(Math.min(100, (uniqueEmpDays / targetCapacity) * 100).toFixed(1));
+          rates.push(pct);
+          details.push(`${uniqueEmpDays} dari ${targetCapacity} hari-orang (${ logs.filter(a => String(a.date || '').startsWith(ym)).length } log)`);
+        }
+        return { labels, rates, details, activeCount: activeEmps.length };
+      }
+
+      // Default: 7 Hari Terakhir (Real-Time per tanggal dari tabel attendances)
+      const labels = [];
+      const rates = [];
+      const details = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const iso = formatLocalIsoDate(d);
+        const lbl = i === 0 ? `Hari Ini (${d.getDate()} ${monthsShort[d.getMonth()]})` : `${d.getDate()} ${monthsShort[d.getMonth()]}`;
+        labels.push(lbl);
+        const presentNips = new Set(logs.filter(a => a.date === iso).map(a => a.nip));
+        const count = presentNips.size;
+        const pct = Number(Math.min(100, (count / denom) * 100).toFixed(1));
+        rates.push(pct);
+        details.push(`${count} dari ${activeEmps.length} karyawan hadir`);
+      }
+      return { labels, rates, details, activeCount: activeEmps.length };
     }
   };
 

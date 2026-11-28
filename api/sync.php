@@ -107,11 +107,22 @@ if ($method === 'GET') {
         ORDER BY e.created_at DESC, e.nip ASC
     ";
     $employees = $pdo->query($empSql)->fetchAll();
+    // Hitung jumlah hari hadir unik per karyawan pada bulan berjalan untuk persentase kehadiran riil
+    $curMonthPrefix = date('Y-m') . '%';
+    $attCountStmt = $pdo->prepare('SELECT id_karyawan, COUNT(DISTINCT tanggal) AS hadir_hari FROM attendances WHERE tanggal LIKE ? GROUP BY id_karyawan');
+    $attCountStmt->execute([$curMonthPrefix]);
+    $attCountMap = [];
+    foreach ($attCountStmt->fetchAll() as $r) {
+        $attCountMap[$r['id_karyawan']] = (int)$r['hadir_hari'];
+    }
+
     foreach ($employees as &$e) {
         $e['active'] = ((int)$e['active']) === 1;
         $e['baseSalary'] = (float)$e['baseSalary'];
         $e['allowance'] = (float)$e['allowance'];
-        $e['attendanceRate'] = 96;
+        $daysPresent = $attCountMap[$e['id']] ?? 0;
+        $e['daysPresentMonth'] = $daysPresent;
+        $e['attendanceRate'] = min(100, (int)round(($daysPresent / 22) * 100));
     }
 
     $leaveSql = "
