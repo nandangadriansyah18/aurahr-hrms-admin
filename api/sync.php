@@ -89,6 +89,24 @@ try {
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
+    $holidayTableExisted = (bool)$pdo->query("SHOW TABLES LIKE 'company_holidays'")->fetch();
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS company_holidays (
+            id_libur VARCHAR(24) NOT NULL PRIMARY KEY,
+            judul VARCHAR(140) NOT NULL,
+            tgl_mulai DATE NOT NULL,
+            tgl_selesai DATE NOT NULL,
+            kategori ENUM('Libur Nasional', 'Cuti Bersama', 'Pengumuman Kantor') NOT NULL DEFAULT 'Libur Nasional',
+            keterangan VARCHAR(255) DEFAULT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    if (!$holidayTableExisted) {
+        $seedHol = $pdo->prepare("INSERT INTO company_holidays (id_libur, judul, tgl_mulai, tgl_selesai, kategori, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
+        $seedHol->execute(['HL-01', 'Hari Raya Natal & Cuti Bersama', '2026-12-25', '2026-12-26', 'Libur Nasional', 'Operasional kantor diliburkan sesuai ketetapan SKB 3 Menteri.']);
+        $seedHol->execute(['HL-02', 'Libur Tahun Baru Masehi 2027', '2027-01-01', '2027-01-01', 'Libur Nasional', 'Libur resmi pergantian tahun baru bagi seluruh divisi.']);
+        $seedHol->execute(['HL-03', 'Libur Hari Raya Idul Fitri 1448 H', '2027-03-19', '2027-03-23', 'Cuti Bersama', 'Libur Nasional & Cuti Bersama Idul Fitri tanpa memotong kuota cuti tahunan.']);
+    }
 } catch (Throwable $ignore) {
     // Abaikan jika sudah ada
 }
@@ -250,6 +268,18 @@ if ($method === 'GET') {
         LIMIT 30
     ")->fetchAll();
 
+    $holidayRows = $pdo->query("
+        SELECT
+            id_libur AS id,
+            judul AS title,
+            tgl_mulai AS startDate,
+            tgl_selesai AS endDate,
+            kategori AS category,
+            COALESCE(keterangan, '') AS description
+        FROM company_holidays
+        ORDER BY tgl_mulai ASC
+    ")->fetchAll();
+
     jsonOut([
         'ok' => true,
         'db' => [
@@ -259,6 +289,7 @@ if ($method === 'GET') {
             'essAttendances' => $essAttendances,
             'accounts'       => $accounts,
             'otpRequests'    => $otpRows,
+            'holidays'       => $holidayRows,
         ],
     ]);
 }
@@ -506,6 +537,28 @@ if ($method === 'POST') {
 
             case 'deleteDepartment': {
                 $stmt = $pdo->prepare('DELETE FROM departments WHERE id_dept = ?');
+                $stmt->execute([$p['id'] ?? '']);
+                jsonOut(['ok' => true]);
+            }
+
+            case 'addHoliday': {
+                $kat = in_array(($p['category'] ?? ''), ['Libur Nasional', 'Cuti Bersama', 'Pengumuman Kantor'], true)
+                    ? $p['category']
+                    : 'Libur Nasional';
+                $ins = $pdo->prepare('INSERT INTO company_holidays (id_libur, judul, tgl_mulai, tgl_selesai, kategori, keterangan) VALUES (?, ?, ?, ?, ?, ?)');
+                $ins->execute([
+                    $p['id'] ?? ('HL-' . rand(100, 999)),
+                    $p['title'] ?? 'Hari Libur Perusahaan',
+                    $p['startDate'] ?? date('Y-m-d'),
+                    $p['endDate'] ?? ($p['startDate'] ?? date('Y-m-d')),
+                    $kat,
+                    $p['description'] ?? ''
+                ]);
+                jsonOut(['ok' => true]);
+            }
+
+            case 'deleteHoliday': {
+                $stmt = $pdo->prepare('DELETE FROM company_holidays WHERE id_libur = ?');
                 $stmt->execute([$p['id'] ?? '']);
                 jsonOut(['ok' => true]);
             }

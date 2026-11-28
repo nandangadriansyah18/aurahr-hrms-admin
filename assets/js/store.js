@@ -163,7 +163,12 @@
       { id: 'ACC-05', nip: 'AUR-0115', name: 'Nadia Kusuma Putri', email: 'nadia.putri@aurahr.id', password: 'password123', role: 'KARYAWAN', lastLogin: 'Hari ini, 08:04 WIB', active: true },
       { id: 'ACC-06', nip: 'AUR-0288', name: 'Bagas Mahendra', email: 'bagas.mahendra@aurahr.id', password: 'password123', role: 'KARYAWAN', lastLogin: '12 Okt 2026', active: false }
     ],
-    otpRequests: []
+    otpRequests: [],
+    holidays: [
+      { id: 'HL-01', title: 'Hari Raya Natal & Cuti Bersama', startDate: '2026-12-25', endDate: '2026-12-26', category: 'Libur Nasional', description: 'Operasional kantor diliburkan sesuai ketetapan SKB 3 Menteri.' },
+      { id: 'HL-02', title: 'Libur Tahun Baru Masehi 2027', startDate: '2027-01-01', endDate: '2027-01-01', category: 'Libur Nasional', description: 'Libur resmi pergantian tahun baru bagi seluruh divisi.' },
+      { id: 'HL-03', title: 'Libur Hari Raya Idul Fitri 1448 H', startDate: '2027-03-19', endDate: '2027-03-23', category: 'Cuti Bersama', description: 'Libur Nasional & Cuti Bersama Idul Fitri tanpa memotong kuota cuti tahunan.' }
+    ]
   };
 
   function clone(obj) {
@@ -183,6 +188,7 @@
     const remoteDb = fetchInitialFromPhp();
     if (remoteDb) {
       remoteDb.otpRequests = remoteDb.otpRequests || [];
+      remoteDb.holidays = remoteDb.holidays || [];
       memoryCache = remoteDb;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteDb)); } catch (e) { /* ignore */ }
       return memoryCache;
@@ -198,6 +204,7 @@
       }
       const parsed = JSON.parse(raw);
       parsed.otpRequests = parsed.otpRequests || [];
+      parsed.holidays = parsed.holidays || clone(SEED_DATA.holidays);
       let repaired = false;
       if (Array.isArray(parsed.employees)) {
         parsed.employees.forEach((e, idx) => {
@@ -519,6 +526,37 @@
       pushToPhp('deleteDepartment', { id: deptId });
     },
 
+    /* ---------------- COMPANY HOLIDAYS & ANNOUNCEMENTS (SUPER ADMIN) ---------------- */
+    getHolidays() {
+      const db = loadDB();
+      return (db.holidays || []).slice().sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
+    },
+
+    addHoliday(payload) {
+      const db = loadDB();
+      db.holidays = db.holidays || [];
+      const item = {
+        id: 'HL-' + Date.now().toString(36).slice(-4).toUpperCase(),
+        title: String(payload.title || '').trim(),
+        startDate: payload.startDate,
+        endDate: payload.endDate || payload.startDate,
+        category: payload.category || 'Libur Nasional',
+        description: String(payload.description || '').trim()
+      };
+      db.holidays.push(item);
+      db.holidays.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
+      saveDB(db);
+      pushToPhp('addHoliday', item);
+      return item;
+    },
+
+    deleteHoliday(id) {
+      const db = loadDB();
+      db.holidays = (db.holidays || []).filter(h => h.id !== id);
+      saveDB(db);
+      pushToPhp('deleteHoliday', { id });
+    },
+
     resetAccountPassword(accId, newPassword) {
       const db = loadDB();
       const acc = db.accounts.find(a => a.id === accId);
@@ -546,6 +584,7 @@
           if (res && res.ok && res.db) {
             remoteEnabled = true;
             res.db.otpRequests = res.db.otpRequests || [];
+            res.db.holidays = res.db.holidays || [];
             memoryCache = res.db;
             try { localStorage.setItem(STORAGE_KEY, JSON.stringify(res.db)); } catch (e) { /* ignore */ }
           }

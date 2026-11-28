@@ -151,6 +151,18 @@
           </article>
         </section>
 
+        <!-- KALENDER HARI LIBUR & PENGUMUMAN PERUSAHAAN (DIKELOLA SUPER ADMIN) -->
+        <section class="glass-card" id="companyHolidaySection" style="border-color:rgba(79,70,229,0.2);">
+          <div class="section-head" style="align-items:center;flex-wrap:wrap;gap:12px;">
+            <div>
+              <h2 class="section-head__title">📅 Jadwal Hari Libur &amp; Pengumuman Resmi Perusahaan</h2>
+              <p class="section-head__sub" id="holidaySectionSub">Informasi libur nasional, cuti bersama, dan pengumuman operasional untuk seluruh karyawan.</p>
+            </div>
+            <button type="button" class="btn btn--sm btn--primary" id="addHolidayBtn" style="display:none;">+ Tetapkan Hari Libur / Pengumuman</button>
+          </div>
+          <div id="holidayCardsContainer" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;"></div>
+        </section>
+
         <!-- ROW 2: CHARTS (65% LINE CHART + 35% DOUGHNUT CHART) -->
         <section class="charts-grid">
           <article class="glass-card">
@@ -271,8 +283,8 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js?v=20261128g"></script>
-  <script src="../assets/js/app.js?v=20261128g"></script>
+  <script src="../assets/js/store.js?v=20261128h"></script>
+  <script src="../assets/js/app.js?v=20261128h"></script>
   <script>
     (function () {
       function toLocalIso(d = new Date()) {
@@ -724,8 +736,124 @@
         });
       }
 
+      function renderHolidaysSection() {
+        const session = AuraStore.getSession() || {};
+        const isSuperAdmin = session.role === 'SUPER_ADMIN';
+        const addBtn = document.getElementById('addHolidayBtn');
+        const subEl = document.getElementById('holidaySectionSub');
+        const container = document.getElementById('holidayCardsContainer');
+        if (!container) return;
+
+        if (addBtn) addBtn.style.display = isSuperAdmin ? 'inline-flex' : 'none';
+        if (subEl) {
+          subEl.textContent = isSuperAdmin
+            ? 'Anda login sebagai Super Admin — tetapkan jadwal libur nasional, cuti bersama, atau pengumuman yang otomatis tampil di HR & Portal Karyawan.'
+            : 'Daftar resmi libur nasional, cuti bersama, dan pengumuman yang ditetapkan oleh Super Admin.';
+        }
+
+        const list = AuraStore.getHolidays();
+        const tIso = toLocalIso(new Date());
+
+        if (list.length === 0) {
+          container.innerHTML = `<div style="padding:18px;border-radius:12px;background:#F8FAFC;border:1px dashed var(--border-subtle);color:var(--text-secondary);font-size:0.82rem;text-align:center;">Belum ada jadwal hari libur atau pengumuman yang ditetapkan.</div>`;
+          return;
+        }
+
+        container.innerHTML = list.map(h => {
+          const isSingleDay = h.startDate === h.endDate;
+          const dateText = isSingleDay
+            ? AuraApp.formatDateIndo(h.startDate)
+            : `${AuraApp.formatDateIndo(h.startDate)} – ${AuraApp.formatDateIndo(h.endDate)}`;
+          const isToday = h.startDate <= tIso && h.endDate >= tIso;
+          let badgeCls = 'badge--danger';
+          if (h.category === 'Cuti Bersama') badgeCls = 'badge--warning';
+          if (h.category === 'Pengumuman Kantor') badgeCls = 'badge--info';
+
+          return `
+            <div style="padding:14px 16px;border-radius:14px;background:${isToday ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.78)'};border:1px solid ${isToday ? 'rgba(16,185,129,0.35)' : 'var(--border-subtle)'};display:flex;flex-direction:column;justify-content:space-between;gap:8px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                  <span class="badge ${badgeCls}">${isToday ? '🎉 Berlangsung Hari Ini • ' : ''}${h.category}</span>
+                  ${isSuperAdmin ? `<button type="button" class="btn btn--icon btn--icon-danger" style="width:26px;height:26px;flex-shrink:0;" title="Hapus Jadwal Libur" data-del-holiday="${h.id}">✕</button>` : ''}
+                </div>
+                <div style="font-weight:800;font-size:0.9rem;color:var(--text-primary);margin-top:8px;">${h.title}</div>
+                <div class="mono" style="font-size:0.76rem;font-weight:700;color:var(--color-primary);margin-top:3px;">🗓 Pada ${dateText}</div>
+                ${h.description ? `<p style="font-size:0.77rem;color:var(--text-secondary);margin-top:6px;line-height:1.45;">${h.description}</p>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (isSuperAdmin) {
+          container.querySelectorAll('[data-del-holiday]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              AuraStore.deleteHoliday(btn.dataset.delHoliday);
+              AuraApp.showToast('Jadwal hari libur / pengumuman berhasil dihapus.', 'warning');
+              renderHolidaysSection();
+            });
+          });
+        }
+      }
+
+      const addHolidayBtn = document.getElementById('addHolidayBtn');
+      if (addHolidayBtn) {
+        addHolidayBtn.addEventListener('click', () => {
+          const defDate = toLocalIso(new Date());
+          AuraApp.openModal({
+            title: 'Tetapkan Hari Libur / Pengumuman Baru',
+            bodyHtml: `
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="form-group">
+                  <label class="form-label" for="holTitleInput">Nama Hari Libur / Judul Pengumuman <span class="req">*</span></label>
+                  <input type="text" id="holTitleInput" class="form-control" placeholder="Contoh: Libur Hari Raya Idul Fitri 1448 H" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="holCatInput">Kategori</label>
+                  <select id="holCatInput" class="form-control">
+                    <option value="Libur Nasional">Libur Nasional</option>
+                    <option value="Cuti Bersama">Cuti Bersama</option>
+                    <option value="Pengumuman Kantor">Pengumuman Kantor</option>
+                  </select>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="holStartInput">Tanggal Mulai <span class="req">*</span></label>
+                    <input type="date" id="holStartInput" class="form-control" value="${defDate}" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="holEndInput">Tanggal Selesai <span class="req">*</span></label>
+                    <input type="date" id="holEndInput" class="form-control" value="${defDate}" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="holDescInput">Keterangan Resmi untuk Karyawan</label>
+                  <textarea id="holDescInput" rows="2" class="form-control" placeholder="Contoh: Kantor libur penuh, operasional aktif kembali setelah masa libur selesai."></textarea>
+                </div>
+              </div>
+            `,
+            confirmText: 'Terbitkan Jadwal →',
+            onConfirm: () => {
+              const title = document.getElementById('holTitleInput').value.trim();
+              const category = document.getElementById('holCatInput').value;
+              const startDate = document.getElementById('holStartInput').value;
+              const endDate = document.getElementById('holEndInput').value;
+              const description = document.getElementById('holDescInput').value.trim();
+              if (!title || !startDate || !endDate || endDate < startDate) {
+                AuraApp.showToast('Judul dan rentang tanggal libur wajib diisi dengan benar!', 'danger');
+                return false;
+              }
+              AuraStore.addHoliday({ title, category, startDate, endDate, description });
+              AuraApp.showToast(`Jadwal "${title}" berhasil diterbitkan ke seluruh portal!`, 'success');
+              renderHolidaysSection();
+              return true;
+            }
+          });
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         renderMetricsAndGreeting();
+        renderHolidaysSection();
         renderCharts('daily7');
         renderLeaveTable();
         renderAttendanceLog();

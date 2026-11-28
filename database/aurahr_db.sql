@@ -169,6 +169,20 @@ CREATE TABLE IF NOT EXISTS `otp_requests` (
   KEY `idx_otp_user` (`id_user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------------------------------------------------------
+-- 9. Tabel COMPANY_HOLIDAYS (Kalender Hari Libur & Pengumuman Super Admin)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `company_holidays` (
+  `id_libur` VARCHAR(24) NOT NULL,
+  `judul` VARCHAR(140) NOT NULL,
+  `tgl_mulai` DATE NOT NULL,
+  `tgl_selesai` DATE NOT NULL,
+  `kategori` ENUM('Libur Nasional', 'Cuti Bersama', 'Pengumuman Kantor') NOT NULL DEFAULT 'Libur Nasional',
+  `keterangan` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_libur`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ============================================================================
 -- SEED DATA AWAL PERUSAHAAN
 -- ============================================================================

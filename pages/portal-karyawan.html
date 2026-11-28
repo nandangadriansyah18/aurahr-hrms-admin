@@ -84,6 +84,9 @@
                 <span class="badge badge--active" id="attendanceStateBadge">Masuk: 07:56 WIB</span>
               </div>
 
+              <!-- BANNER OTOMATIS JIKA HARI INI TANGGAL LIBUR RESMI -->
+              <div id="essTodayHolidayAlert" style="display:none;padding:9px 12px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.32);color:#065F46;font-size:0.76rem;font-weight:600;"></div>
+
               <!-- JAM PRESENSI LANGSUNG + STOPWATCH DURASI KERJA -->
               <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
                 <div>
@@ -161,6 +164,17 @@
               </article>
             </div>
           </section>
+
+          <!-- PENGUMUMAN & JADWAL HARI LIBUR PERUSAHAAN DARI SUPER ADMIN -->
+          <article class="glass-card" id="essHolidaysCard">
+            <div class="section-head">
+              <div>
+                <h2 class="section-head__title">📢 Jadwal Hari Libur &amp; Pengumuman Resmi Perusahaan</h2>
+                <p class="section-head__sub">Ketetapan hari libur nasional, cuti bersama, dan informasi kantor dari manajemen pusat.</p>
+              </div>
+            </div>
+            <div id="essHolidayListContainer" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;"></div>
+          </article>
 
           <!-- ROW 2 (HOME): ATTENDANCE LOG ONLY -->
           <article class="glass-card" id="riwayatSection">
@@ -289,8 +303,8 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js?v=20261128g"></script>
-  <script src="../assets/js/app.js?v=20261128g"></script>
+  <script src="../assets/js/store.js?v=20261128h"></script>
+  <script src="../assets/js/app.js?v=20261128h"></script>
   <script>
     (function () {
       function toLocalIso(d = new Date()) {
@@ -497,6 +511,43 @@
             document.getElementById('shiftProgressBar').style.width = '0%';
             document.getElementById('shiftProgressLabel').textContent = '0% Shift';
           }
+        }
+
+        // Render Jadwal Hari Libur & Pengumuman dari Super Admin
+        const holidays = AuraStore.getHolidays();
+        const todayIsoNow = toLocalIso(new Date());
+        const todayHoliday = holidays.find(h => h.startDate <= todayIsoNow && h.endDate >= todayIsoNow);
+        const todayHolAlert = document.getElementById('essTodayHolidayAlert');
+        if (todayHolAlert) {
+          if (todayHoliday) {
+            todayHolAlert.style.display = 'block';
+            todayHolAlert.innerHTML = `🎉 <strong>${todayHoliday.category} Hari Ini:</strong> ${todayHoliday.title}${todayHoliday.description ? ' — ' + todayHoliday.description : ''}`;
+          } else {
+            todayHolAlert.style.display = 'none';
+          }
+        }
+
+        const holContainer = document.getElementById('essHolidayListContainer');
+        if (holContainer) {
+          holContainer.innerHTML = holidays.length
+            ? holidays.map(h => {
+                const sameDay = h.startDate === h.endDate;
+                const dTxt = sameDay
+                  ? AuraApp.formatDateIndo(h.startDate)
+                  : `${AuraApp.formatDateIndo(h.startDate)} – ${AuraApp.formatDateIndo(h.endDate)}`;
+                let bCls = 'badge--danger';
+                if (h.category === 'Cuti Bersama') bCls = 'badge--warning';
+                if (h.category === 'Pengumuman Kantor') bCls = 'badge--info';
+                return `
+                  <div style="padding:13px 15px;border-radius:13px;background:rgba(255,255,255,0.78);border:1px solid var(--border-subtle);">
+                    <span class="badge ${bCls}">${h.category}</span>
+                    <div style="font-weight:800;font-size:0.88rem;margin-top:7px;color:var(--text-primary);">${h.title}</div>
+                    <div class="mono" style="font-size:0.75rem;font-weight:700;color:var(--color-primary);margin-top:3px;">🗓 Pada ${dTxt}</div>
+                    ${h.description ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:5px;line-height:1.45;">${h.description}</p>` : ''}
+                  </div>
+                `;
+              }).join('')
+            : `<div style="color:var(--text-secondary);font-size:0.8rem;">Belum ada pengumuman hari libur terbaru.</div>`;
         }
 
         // Filter Attendance Table by Date / Period
