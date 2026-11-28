@@ -144,9 +144,13 @@
 
     let session = window.AuraStore.getSession();
 
-    // Enforce authentication on protected pages (except standalone layout.html preview)
+    // Dukungan URL khusus import Figma (?figma_preview=SUPER_ADMIN|HR|KARYAWAN) tanpa membuka akses publik biasa
     if (!session) {
-      if (activePage === 'layout') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const previewRole = (urlParams.get('figma_preview') || '').toUpperCase();
+      if (['SUPER_ADMIN', 'HR', 'KARYAWAN'].includes(previewRole)) {
+        session = window.AuraStore.switchRoleQuick(previewRole);
+      } else if (activePage === 'layout') {
         session = {
           id: 'ACC-02',
           nip: 'AUR-0021',
