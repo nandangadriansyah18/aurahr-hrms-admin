@@ -134,17 +134,18 @@
             </article>
 
             <div class="kpi-grid kpi-grid--3" style="grid-template-columns:1fr;gap:14px;">
-              <article class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;">
+              <article class="glass-card glass-card--interactive" id="leaveQuotaKpiCard" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;cursor:pointer;" title="Klik untuk ajukan atau lihat riwayat cuti">
                 <div>
                   <div class="stat-card__label">Sisa Kuota Cuti Tahunan</div>
                   <div class="stat-card__value" style="font-size:1.45rem;" id="essLeaveQuota">9 / 12 Hari</div>
+                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;" id="essLeaveSubMeta">Terpakai 3 hari cuti tahunan</div>
                 </div>
-                <span class="badge badge--info">Kuota Aktif 2026</span>
+                <span class="badge badge--info" id="essLeaveYearBadge">Kuota Aktif 2026</span>
               </article>
 
-              <article class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;">
+              <article class="glass-card glass-card--interactive" id="attMonthKpiCard" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;cursor:pointer;" title="Klik untuk melihat log presensi 30 hari terakhir">
                 <div>
-                  <div class="stat-card__label">Kehadiran Bulan Ini</div>
+                  <div class="stat-card__label" id="essAttMonthLabel">Kehadiran Bulan Ini</div>
                   <div class="stat-card__value" style="font-size:1.45rem;" id="essAttendanceCount">0 / 22 Hari</div>
                 </div>
                 <span class="badge badge--active" id="essAttendanceBadge">0% Kehadiran</span>
@@ -412,19 +413,41 @@
         const net = Math.round(gross * 0.95);
         document.getElementById('essThpValue').textContent = AuraApp.formatRupiah(net);
 
+        const nowDate = new Date();
+        const curYear = String(nowDate.getFullYear());
+        const curYm = `${curYear}-${String(nowDate.getMonth() + 1).padStart(2, '0')}`;
+        const monthsFull = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
         const myLeaves = AuraStore.getLeaveRequests().filter(l => l.nip === emp.nip);
-        const approvedDays = myLeaves.filter(l => l.status === 'Approved').reduce((s, l) => s + Number(l.days || 0), 0);
-        const remaining = Math.max(0, 12 - approvedDays);
+        // Hanya "Cuti Tahunan" yang berstatus Approved di tahun berjalan yang memotong kuota 12 hari (sesuai aturan HR perusahaan)
+        const approvedAnnualDays = myLeaves
+          .filter(l => l.status === 'Approved' && l.type === 'Cuti Tahunan' && String(l.startDate || '').startsWith(curYear))
+          .reduce((s, l) => s + Number(l.days || 0), 0);
+        const pendingAnnualDays = myLeaves
+          .filter(l => l.status === 'Pending' && l.type === 'Cuti Tahunan' && String(l.startDate || '').startsWith(curYear))
+          .reduce((s, l) => s + Number(l.days || 0), 0);
+        const remaining = Math.max(0, 12 - approvedAnnualDays);
         document.getElementById('essLeaveQuota').textContent = `${remaining} / 12 Hari`;
+        const lvYearBadge = document.getElementById('essLeaveYearBadge');
+        if (lvYearBadge) lvYearBadge.textContent = `Kuota Aktif ${curYear}`;
+        const lvSubMeta = document.getElementById('essLeaveSubMeta');
+        if (lvSubMeta) {
+          lvSubMeta.textContent = pendingAnnualDays > 0
+            ? `Terpakai ${approvedAnnualDays} hr • ${pendingAnnualDays} hr menunggu HR`
+            : `Terpakai ${approvedAnnualDays} hari cuti tahunan`;
+        }
 
         const myAtt = AuraStore.getEssAttendances(emp.nip);
-        const uniqueAttDays = new Set(myAtt.map(a => a.date)).size;
+        const monthAtt = myAtt.filter(a => String(a.date || '').startsWith(curYm));
+        const uniqueAttDays = new Set(monthAtt.map(a => a.date)).size;
         const attPct = Math.min(100, Math.round((uniqueAttDays / 22) * 100));
+        const attMonthLbl = document.getElementById('essAttMonthLabel');
+        if (attMonthLbl) attMonthLbl.textContent = `Kehadiran Bulan Ini (${monthsFull[nowDate.getMonth()]})`;
         const attCountEl = document.getElementById('essAttendanceCount');
         const attBadgeEl = document.getElementById('essAttendanceBadge');
         if (attCountEl) attCountEl.textContent = `${uniqueAttDays} / 22 Hari`;
         if (attBadgeEl) {
-          attBadgeEl.textContent = uniqueAttDays > 0 ? `${attPct}% • ${myAtt.length} Log` : 'Belum Presensi';
+          attBadgeEl.textContent = uniqueAttDays > 0 ? `${attPct}% • ${monthAtt.length} Log` : 'Belum Presensi';
           attBadgeEl.className = uniqueAttDays > 0 ? 'badge badge--active' : 'badge badge--warning';
         }
         const openSession = myAtt.find(a => !a.checkOut);
@@ -963,6 +986,17 @@
 
       document.getElementById('openPayslipBtn').addEventListener('click', showPayslipModal);
       document.getElementById('payslipKpiCard').addEventListener('click', showPayslipModal);
+      const leaveKpiEl = document.getElementById('leaveQuotaKpiCard');
+      if (leaveKpiEl) leaveKpiEl.addEventListener('click', () => switchEssView('leave'));
+      const attKpiEl = document.getElementById('attMonthKpiCard');
+      if (attKpiEl) {
+        attKpiEl.addEventListener('click', () => {
+          essAttPeriod = 'month';
+          if (essAttPeriodSel) essAttPeriodSel.value = 'month';
+          renderEssPortal();
+          document.getElementById('riwayatSection')?.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
 
       document.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('[data-ess-view]');
@@ -1010,11 +1044,25 @@
         }
 
         const emp = getCurrentEmployee();
+        const chosenType = document.getElementById('leaveType').value;
+        const reqDays = Math.max(1, Math.round((new Date(eVal) - new Date(sVal)) / 86400000) + 1);
+        if (chosenType === 'Cuti Tahunan') {
+          const curYear = String(new Date().getFullYear());
+          const usedDays = AuraStore.getLeaveRequests()
+            .filter(l => l.nip === emp.nip && l.status === 'Approved' && l.type === 'Cuti Tahunan' && String(l.startDate || '').startsWith(curYear))
+            .reduce((s, l) => s + Number(l.days || 0), 0);
+          const sisa = Math.max(0, 12 - usedDays);
+          if (reqDays > sisa) {
+            AuraApp.showToast(`Sisa kuota Cuti Tahunan Anda tinggal ${sisa} hari (mengajukan ${reqDays} hari).`, 'danger');
+            return;
+          }
+        }
+
         AuraStore.submitLeaveRequest({
           nip: emp.nip,
           employeeName: emp.name,
           dept: emp.dept,
-          type: document.getElementById('leaveType').value,
+          type: chosenType,
           startDate: sVal,
           endDate: eVal,
           reason: rVal
