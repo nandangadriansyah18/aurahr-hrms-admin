@@ -100,19 +100,19 @@
             <button type="button" class="btn btn--sm btn--glass" data-report-tab="emp">Rincian Slip Per Pegawai</button>
           </div>
 
-          <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
-            <select id="periodSelect" class="form-control" style="width:auto;">
-              <option value="November 2026">Periode: November 2026</option>
-              <option value="Oktober 2026">Periode: Oktober 2026</option>
-              <option value="September 2026">Periode: September 2026</option>
+          <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <select id="periodSelect" class="form-control" style="width:auto;font-weight:600;">
+              <option value="today" selected>📅 Hari Ini</option>
+              <option value="yesterday">Kemarin</option>
+              <option value="week">7 Hari Terakhir</option>
+              <option value="2026-11">Bulan: November 2026</option>
+              <option value="2026-10">Bulan: Oktober 2026</option>
+              <option value="2026-09">Bulan: September 2026</option>
+              <option value="custom">Tanggal Pilihan</option>
             </select>
+            <input type="date" id="reportDatePicker" class="form-control mono" style="width:auto;padding:7px 10px;font-size:0.8rem;" title="Pilih tanggal spesifik laporan" />
             <select id="reportDeptFilter" class="form-control" style="width:auto;">
               <option value="">Semua Departemen</option>
-              <option value="Engineering & Product">Engineering &amp; Product</option>
-              <option value="Sales & Marketing">Sales &amp; Marketing</option>
-              <option value="Operations & Logistik">Operations &amp; Logistik</option>
-              <option value="Finance & Legal">Finance &amp; Legal</option>
-              <option value="HR & General Affairs">HR &amp; General Affairs</option>
             </select>
           </div>
         </section>
@@ -196,33 +196,97 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js"></script>
-  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/store.js?v=20261128f"></script>
+  <script src="../assets/js/app.js?v=20261128f"></script>
   <script>
     (function () {
+      function toLocalIso(d = new Date()) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      function offsetDateIso(daysOffset) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysOffset);
+        return toLocalIso(d);
+      }
+
       let currentTab = 'dept';
       const periodEl = document.getElementById('periodSelect');
+      const datePickerEl = document.getElementById('reportDatePicker');
       const deptFilterEl = document.getElementById('reportDeptFilter');
+      let customReportDate = toLocalIso(new Date());
+      if (datePickerEl) datePickerEl.value = customReportDate;
+
+      function getPeriodContext() {
+        const val = periodEl.value;
+        const tIso = toLocalIso(new Date());
+        const yIso = offsetDateIso(-1);
+        const wIso = offsetDateIso(-6);
+
+        if (val === 'today') {
+          return { label: `Hari Ini (${AuraApp.formatDateIndo(tIso)})`, workDays: 1, matchAtt: d => d === tIso, matchLeave: l => (l.startDate <= tIso && l.endDate >= tIso) || l.createdDate === tIso };
+        }
+        if (val === 'yesterday') {
+          return { label: `Kemarin (${AuraApp.formatDateIndo(yIso)})`, workDays: 1, matchAtt: d => d === yIso, matchLeave: l => (l.startDate <= yIso && l.endDate >= yIso) || l.createdDate === yIso };
+        }
+        if (val === 'week') {
+          return { label: `7 Hari Terakhir (${AuraApp.formatDateIndo(wIso)} – ${AuraApp.formatDateIndo(tIso)})`, workDays: 5, matchAtt: d => d >= wIso && d <= tIso, matchLeave: l => (l.startDate <= tIso && l.endDate >= wIso) || (l.createdDate >= wIso && l.createdDate <= tIso) };
+        }
+        if (val === 'custom') {
+          const c = customReportDate;
+          return { label: `Tanggal ${AuraApp.formatDateIndo(c)}`, workDays: 1, matchAtt: d => d === c, matchLeave: l => (l.startDate <= c && l.endDate >= c) || l.createdDate === c };
+        }
+        // Monthly YYYY-MM
+        const monthNames = { '2026-11': 'November 2026', '2026-10': 'Oktober 2026', '2026-09': 'September 2026' };
+        return {
+          label: monthNames[val] || val,
+          workDays: 22,
+          matchAtt: d => String(d || '').startsWith(val),
+          matchLeave: l => String(l.startDate || '').startsWith(val) || String(l.endDate || '').startsWith(val)
+        };
+      }
+
+      function calcEmpPeriodAttendance(nip, allAtt, ctx) {
+        const daysPresent = new Set(allAtt.filter(a => a.nip === nip && ctx.matchAtt(a.date)).map(a => a.date)).size;
+        return Math.min(100, Math.round((daysPresent / Math.max(1, ctx.workDays)) * 100));
+      }
 
       function renderReport() {
-        const period = periodEl.value;
+        const ctx = getPeriodContext();
         const selectedDept = deptFilterEl.value;
-        const metrics = AuraStore.getMetrics();
-        const leaves = AuraStore.getLeaveRequests();
+        const allEmps = AuraStore.getEmployees().filter(e => e.active && e.contract !== 'Nonaktif');
+        const scopedEmps = selectedDept ? allEmps.filter(e => e.dept === selectedDept) : allEmps;
+        const scopedNips = new Set(scopedEmps.map(e => e.nip));
+
+        const allAtt = AuraStore.getEssAttendances();
+        const leaves = AuraStore.getLeaveRequests().filter(l => ctx.matchLeave(l) && (!selectedDept || l.dept === selectedDept || scopedNips.has(l.nip)));
         const totalLeaveDays = leaves.reduce((s, l) => s + Number(l.days || 0), 0);
 
-        document.getElementById('repAvgAttendance').textContent = `${metrics.avgAttendance}%`;
+        const avgPeriodAtt = scopedEmps.length
+          ? Number((scopedEmps.reduce((s, e) => s + calcEmpPeriodAttendance(e.nip, allAtt, ctx), 0) / scopedEmps.length).toFixed(1))
+          : 0;
+        const scopedPayroll = scopedEmps.reduce((s, e) => s + Math.round((Number(e.baseSalary || 0) + Number(e.allowance || 0)) * 0.95), 0);
+
+        document.getElementById('repAvgAttendance').textContent = `${avgPeriodAtt}%`;
         document.getElementById('repLeaveCountBadge').textContent = `${leaves.length} Pengajuan`;
         document.getElementById('repTotalLeaveDays').textContent = `${totalLeaveDays} Hari Kerja`;
-        document.getElementById('repNetDisbursed').textContent = AuraApp.formatRupiah(metrics.totalPayroll);
+        document.getElementById('repNetDisbursed').textContent = AuraApp.formatRupiah(scopedPayroll);
 
         const thead = document.getElementById('reportThead');
         const tbody = document.getElementById('reportTbody');
         const tfoot = document.getElementById('reportTfoot');
 
         if (currentTab === 'dept') {
-          document.getElementById('reportTableHeading').textContent = `Rekapitulasi Konsolidasi Per Departemen — ${period}`;
-          let depts = AuraStore.getDepartmentsWithCounts();
+          document.getElementById('reportTableHeading').textContent = `Rekapitulasi Konsolidasi Per Departemen — ${ctx.label}`;
+          let depts = AuraStore.getDepartmentsWithCounts().map(d => {
+            const dEmps = allEmps.filter(e => e.dept === d.name);
+            const dAtt = dEmps.length
+              ? Number((dEmps.reduce((s, e) => s + calcEmpPeriodAttendance(e.nip, allAtt, ctx), 0) / dEmps.length).toFixed(1))
+              : 0;
+            return Object.assign({}, d, { avgAttendance: dAtt });
+          });
           if (selectedDept) depts = depts.filter(d => d.name === selectedDept);
 
           thead.innerHTML = `
@@ -267,7 +331,7 @@
             <tr>
               <td>GRAND TOTAL PERUSAHAAN</td>
               <td>${sumEmp} Pegawai</td>
-              <td class="mono">${metrics.avgAttendance}%</td>
+              <td class="mono">${avgPeriodAtt}%</td>
               <td class="mono">${AuraApp.formatRupiah(sumBase)}</td>
               <td class="mono">${AuraApp.formatRupiah(sumAllow)}</td>
               <td class="mono" style="color:var(--status-danger);">-${AuraApp.formatRupiah(sumDed)}</td>
@@ -275,9 +339,8 @@
             </tr>
           `;
         } else {
-          document.getElementById('reportTableHeading').textContent = `Rincian Remunerasi & Kehadiran Per Pegawai — ${period}`;
-          let emps = AuraStore.getEmployees().filter(e => e.active);
-          if (selectedDept) emps = emps.filter(e => e.dept === selectedDept);
+          document.getElementById('reportTableHeading').textContent = `Rincian Remunerasi & Kehadiran Per Pegawai — ${ctx.label}`;
+          let emps = scopedEmps;
 
           thead.innerHTML = `
             <tr>
@@ -294,12 +357,13 @@
           tbody.innerHTML = emps.map(e => {
             const gross = Number(e.baseSalary || 0) + Number(e.allowance || 0);
             const net = Math.round(gross * 0.95);
+            const empAtt = calcEmpPeriodAttendance(e.nip, allAtt, ctx);
             return `
               <tr>
                 <td class="mono" style="font-weight:700;color:var(--color-primary);">${e.nip}</td>
                 <td><strong>${e.name}</strong></td>
                 <td>${e.dept}<div style="font-size:0.74rem;color:var(--text-secondary);">${e.position}</div></td>
-                <td class="mono">${e.attendanceRate || 95}%</td>
+                <td class="mono">${empAtt}%</td>
                 <td class="mono">${AuraApp.formatRupiah(e.baseSalary)}</td>
                 <td class="mono">${AuraApp.formatRupiah(e.allowance)}</td>
                 <td class="mono" style="font-weight:800;color:var(--status-success);">${AuraApp.formatRupiah(net)}</td>
@@ -328,10 +392,31 @@
         });
       });
 
-      periodEl.addEventListener('change', renderReport);
+      periodEl.addEventListener('change', () => {
+        if (periodEl.value === 'today' && datePickerEl) {
+          customReportDate = toLocalIso(new Date());
+          datePickerEl.value = customReportDate;
+        } else if (periodEl.value === 'yesterday' && datePickerEl) {
+          customReportDate = offsetDateIso(-1);
+          datePickerEl.value = customReportDate;
+        }
+        renderReport();
+      });
+      if (datePickerEl) {
+        datePickerEl.addEventListener('change', () => {
+          if (!datePickerEl.value) return;
+          customReportDate = datePickerEl.value;
+          const tIso = toLocalIso(new Date());
+          const yIso = offsetDateIso(-1);
+          periodEl.value = customReportDate === tIso ? 'today' : (customReportDate === yIso ? 'yesterday' : 'custom');
+          renderReport();
+        });
+      }
       deptFilterEl.addEventListener('change', renderReport);
 
       document.getElementById('exportCsvBtn').addEventListener('click', () => {
+        const ctx = getPeriodContext();
+        const allAtt = AuraStore.getEssAttendances();
         const selectedDept = deptFilterEl.value;
         let rows = [];
         let filePrefix = 'Laporan-Departemen';
@@ -347,11 +432,16 @@
               const allow = Number(e.allowance || 0);
               const ded = Math.round((base + allow) * 0.05);
               const net = base + allow - ded;
-              return [e.nip, `"${e.name}"`, `"${e.dept}"`, `"${e.position}"`, e.attendanceRate || 95, base, allow, ded, net];
+              return [e.nip, `"${e.name}"`, `"${e.dept}"`, `"${e.position}"`, calcEmpPeriodAttendance(e.nip, allAtt, ctx), base, allow, ded, net];
             })
           ];
         } else {
-          let depts = AuraStore.getDepartmentsWithCounts();
+          const allEmps = AuraStore.getEmployees().filter(e => e.active);
+          let depts = AuraStore.getDepartmentsWithCounts().map(d => {
+            const dEmps = allEmps.filter(e => e.dept === d.name);
+            const dAtt = dEmps.length ? Number((dEmps.reduce((s, e) => s + calcEmpPeriodAttendance(e.nip, allAtt, ctx), 0) / dEmps.length).toFixed(1)) : 0;
+            return Object.assign({}, d, { avgAttendance: dAtt });
+          });
           if (selectedDept) depts = depts.filter(d => d.name === selectedDept);
           rows = [
             ['Kode', 'Departemen', 'Jumlah Pegawai', 'Rata Kehadiran (%)', 'Total Gaji Pokok', 'Total Tunjangan', 'Potongan', 'Take Home Pay'],
@@ -362,7 +452,7 @@
         const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(r => r.join(',')).join('\n');
         const link = document.createElement('a');
         link.href = encodeURI(csvContent);
-        link.download = `${filePrefix}-AuraHR-${periodEl.value.replace(/\s+/g, '-')}.csv`;
+        link.download = `${filePrefix}-AuraHR-${ctx.label.replace(/[^A-Za-z0-9_-]+/g, '-')}.csv`;
         document.body.appendChild(link);
         link.click();
         link.remove();

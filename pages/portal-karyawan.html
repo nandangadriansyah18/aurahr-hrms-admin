@@ -163,10 +163,21 @@
 
           <!-- ROW 2 (HOME): ATTENDANCE LOG ONLY -->
           <article class="glass-card" id="riwayatSection">
-            <div class="section-head">
+            <div class="section-head" style="align-items:flex-start;flex-wrap:wrap;gap:12px;">
               <div>
                 <h2 class="section-head__title">Riwayat Presensi Masuk &amp; Keluar Saya</h2>
-                <p class="section-head__sub">Catatan jam masuk dan jam pulang harian yang tercatat di sistem.</p>
+                <p class="section-head__sub" id="essAttSub">Catatan jam masuk dan jam pulang pada Hari Ini.</p>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <select id="essAttPeriodSelect" class="form-control" style="width:auto;padding:6px 11px;font-size:0.78rem;font-weight:600;">
+                  <option value="today" selected>📅 Hari Ini</option>
+                  <option value="yesterday">Kemarin</option>
+                  <option value="week">7 Hari Terakhir</option>
+                  <option value="month">30 Hari Terakhir</option>
+                  <option value="custom">Tanggal Pilihan</option>
+                  <option value="all">Semua Periode</option>
+                </select>
+                <input type="date" id="essAttDatePicker" class="form-control mono" style="width:auto;padding:5px 10px;font-size:0.78rem;" title="Pilih tanggal presensi" />
               </div>
             </div>
 
@@ -234,10 +245,21 @@
             </article>
 
             <article class="glass-card">
-              <div class="section-head">
+              <div class="section-head" style="align-items:flex-start;flex-wrap:wrap;gap:10px;">
                 <div>
                   <h2 class="section-head__title">Status Pengajuan Cuti Saya</h2>
-                  <p class="section-head__sub">Pembaruan real-time dari persetujuan tim HR Management.</p>
+                  <p class="section-head__sub" id="essLeaveSub">Pembaruan persetujuan cuti untuk Hari Ini.</p>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                  <select id="essLeavePeriodSelect" class="form-control" style="width:auto;padding:5px 9px;font-size:0.76rem;font-weight:600;">
+                    <option value="today" selected>📅 Hari Ini</option>
+                    <option value="yesterday">Kemarin</option>
+                    <option value="week">7 Hari Terakhir</option>
+                    <option value="month">30 Hari Terakhir</option>
+                    <option value="custom">Tanggal Pilihan</option>
+                    <option value="all">Semua Periode</option>
+                  </select>
+                  <input type="date" id="essLeaveDatePicker" class="form-control mono" style="width:auto;padding:4px 8px;font-size:0.76rem;" title="Pilih tanggal cuti/pengajuan" />
                 </div>
               </div>
 
@@ -266,13 +288,29 @@
     </div>
   </div>
 
-  <script src="../assets/js/store.js?v=20261128d"></script>
-  <script src="../assets/js/app.js?v=20261128d"></script>
+  <script src="../assets/js/store.js?v=20261128f"></script>
+  <script src="../assets/js/app.js?v=20261128f"></script>
   <script>
     (function () {
+      function toLocalIso(d = new Date()) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      function offsetDateIso(daysOffset) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysOffset);
+        return toLocalIso(d);
+      }
+
       const EMPLOYEE_NIP = 'AUR-0108';
       let currentGpsCoord = '-6.2249, 106.8096 • SCBD Jakarta (38m)';
       let activeCheckInRecord = null;
+      let essAttPeriod = 'today';
+      let essAttDate = toLocalIso(new Date());
+      let essLeavePeriod = 'today';
+      let essLeaveDate = toLocalIso(new Date());
 
       function getCurrentEmployee() {
         const session = AuraStore.getSession();
@@ -438,11 +476,37 @@
           }
         }
 
+        // Filter Attendance Table by Date / Period
+        const tIso = toLocalIso(new Date());
+        const yIso = offsetDateIso(-1);
+        const wIso = offsetDateIso(-6);
+        const mIso = offsetDateIso(-29);
+
+        let filteredAtt = myAtt;
+        let attPeriodLabel = 'Semua Periode';
+        if (essAttPeriod === 'week') {
+          filteredAtt = myAtt.filter(a => a.date >= wIso && a.date <= tIso);
+          attPeriodLabel = `7 Hari Terakhir (${AuraApp.formatDateIndo(wIso)} – ${AuraApp.formatDateIndo(tIso)})`;
+        } else if (essAttPeriod === 'month') {
+          filteredAtt = myAtt.filter(a => a.date >= mIso && a.date <= tIso);
+          attPeriodLabel = `30 Hari Terakhir (${AuraApp.formatDateIndo(mIso)} – ${AuraApp.formatDateIndo(tIso)})`;
+        } else if (essAttPeriod !== 'all') {
+          const targetAttDate = essAttPeriod === 'today' ? tIso : (essAttPeriod === 'yesterday' ? yIso : essAttDate);
+          filteredAtt = myAtt.filter(a => a.date === targetAttDate);
+          const pfx = essAttPeriod === 'today' ? 'Hari Ini' : (essAttPeriod === 'yesterday' ? 'Kemarin' : 'Tanggal');
+          attPeriodLabel = `${pfx} (${AuraApp.formatDateIndo(targetAttDate)})`;
+        }
+
+        const essAttSubEl = document.getElementById('essAttSub');
+        if (essAttSubEl) {
+          essAttSubEl.textContent = `Menampilkan ${filteredAtt.length} log presensi • Filter: ${attPeriodLabel}`;
+        }
+
         // Render Attendance Table (Beranda & Presensi)
         const attTbody = document.getElementById('essAttendanceTbody');
         if (attTbody) {
-          attTbody.innerHTML = myAtt.length
-            ? myAtt.map(a => {
+          attTbody.innerHTML = filteredAtt.length
+            ? filteredAtt.map(a => {
                 const statusBadge = a.checkOut
                   ? '<span class="badge badge--active">Selesai</span>'
                   : `<span class="badge ${a.status === 'Terlambat' ? 'badge--warning' : 'badge--info'}">${a.status || 'Sedang Bekerja'}</span>`;
@@ -466,7 +530,7 @@
                   </tr>
                 `;
               }).join('')
-            : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada catatan presensi hari ini.</td></tr>';
+            : `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada catatan presensi pada <strong>${attPeriodLabel}</strong>. Pilih Kemarin, 7 Hari Terakhir, 30 Hari Terakhir, atau tanggal lain di atas.</td></tr>`;
 
           attTbody.querySelectorAll('[data-view-att]').forEach(b => {
             b.addEventListener('click', () => {
@@ -476,24 +540,54 @@
           });
         }
 
+        // Filter Leave Table by Date / Period
+        let filteredLeaves = myLeaves;
+        let leavePeriodLabel = 'Semua Periode';
+        if (essLeavePeriod === 'week') {
+          filteredLeaves = myLeaves.filter(l => {
+            const cDate = l.createdDate || l.startDate;
+            return (l.startDate <= tIso && l.endDate >= wIso) || (cDate >= wIso && cDate <= tIso);
+          });
+          leavePeriodLabel = `7 Hari Terakhir`;
+        } else if (essLeavePeriod === 'month') {
+          filteredLeaves = myLeaves.filter(l => {
+            const cDate = l.createdDate || l.startDate;
+            return (l.startDate <= tIso && l.endDate >= mIso) || (cDate >= mIso && cDate <= tIso);
+          });
+          leavePeriodLabel = `30 Hari Terakhir`;
+        } else if (essLeavePeriod !== 'all') {
+          const targetLvDate = essLeavePeriod === 'today' ? tIso : (essLeavePeriod === 'yesterday' ? yIso : essLeaveDate);
+          filteredLeaves = myLeaves.filter(l => (l.startDate <= targetLvDate && l.endDate >= targetLvDate) || (l.createdDate && l.createdDate === targetLvDate));
+          const pfx = essLeavePeriod === 'today' ? 'Hari Ini' : (essLeavePeriod === 'yesterday' ? 'Kemarin' : 'Tanggal');
+          leavePeriodLabel = `${pfx} (${AuraApp.formatDateIndo(targetLvDate)})`;
+        }
+
+        const essLeaveSubEl = document.getElementById('essLeaveSub');
+        if (essLeaveSubEl) {
+          essLeaveSubEl.textContent = `Menampilkan ${filteredLeaves.length} pengajuan • Filter: ${leavePeriodLabel}`;
+        }
+
         // Render Leave Table (Pengajuan Cuti & Izin)
         const leaveTbody = document.getElementById('essLeaveTbody');
         if (leaveTbody) {
-          leaveTbody.innerHTML = myLeaves.length
-            ? myLeaves.map(l => {
+          leaveTbody.innerHTML = filteredLeaves.length
+            ? filteredLeaves.map(l => {
                 let b = '<span class="badge badge--warning">Menunggu HR</span>';
                 if (l.status === 'Approved') b = '<span class="badge badge--active">Disetujui HR</span>';
                 if (l.status === 'Rejected') b = '<span class="badge badge--danger">Ditolak HR</span>';
                 return `
                   <tr>
                     <td><strong>${l.type}</strong></td>
-                    <td>${AuraApp.formatDateIndo(l.startDate)} (${l.days} hr)</td>
+                    <td>
+                      <div>${AuraApp.formatDateIndo(l.startDate)} (${l.days} hr)</div>
+                      ${l.createdDate ? `<div style="font-size:0.7rem;color:var(--text-secondary);">Diajukan ${AuraApp.formatDateIndo(l.createdDate)}</div>` : ''}
+                    </td>
                     <td>${l.reason}</td>
                     <td>${b}</td>
                   </tr>
                 `;
               }).join('')
-            : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada pengajuan cuti.</td></tr>';
+            : `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-secondary);">Belum ada pengajuan cuti pada <strong>${leavePeriodLabel}</strong>. Pilih Kemarin / 7 Hari Terakhir / Semua Periode di atas.</td></tr>`;
         }
       }
 
@@ -930,6 +1024,64 @@
         AuraApp.showToast('Pengajuan cuti terkirim! Silakan cek di Dashboard HR untuk menyetujui.', 'success');
         renderEssPortal();
       });
+
+      const essAttPeriodSel = document.getElementById('essAttPeriodSelect');
+      const essAttDateInput = document.getElementById('essAttDatePicker');
+      const essLeavePeriodSel = document.getElementById('essLeavePeriodSelect');
+      const essLeaveDateInput = document.getElementById('essLeaveDatePicker');
+
+      if (essAttDateInput) essAttDateInput.value = essAttDate;
+      if (essLeaveDateInput) essLeaveDateInput.value = essLeaveDate;
+
+      if (essAttPeriodSel) {
+        essAttPeriodSel.addEventListener('change', () => {
+          essAttPeriod = essAttPeriodSel.value;
+          if (essAttPeriod === 'today' && essAttDateInput) {
+            essAttDate = toLocalIso(new Date());
+            essAttDateInput.value = essAttDate;
+          } else if (essAttPeriod === 'yesterday' && essAttDateInput) {
+            essAttDate = offsetDateIso(-1);
+            essAttDateInput.value = essAttDate;
+          }
+          renderEssPortal();
+        });
+      }
+      if (essAttDateInput) {
+        essAttDateInput.addEventListener('change', () => {
+          if (!essAttDateInput.value) return;
+          essAttDate = essAttDateInput.value;
+          const tIso = toLocalIso(new Date());
+          const yIso = offsetDateIso(-1);
+          essAttPeriod = essAttDate === tIso ? 'today' : (essAttDate === yIso ? 'yesterday' : 'custom');
+          if (essAttPeriodSel) essAttPeriodSel.value = essAttPeriod;
+          renderEssPortal();
+        });
+      }
+
+      if (essLeavePeriodSel) {
+        essLeavePeriodSel.addEventListener('change', () => {
+          essLeavePeriod = essLeavePeriodSel.value;
+          if (essLeavePeriod === 'today' && essLeaveDateInput) {
+            essLeaveDate = toLocalIso(new Date());
+            essLeaveDateInput.value = essLeaveDate;
+          } else if (essLeavePeriod === 'yesterday' && essLeaveDateInput) {
+            essLeaveDate = offsetDateIso(-1);
+            essLeaveDateInput.value = essLeaveDate;
+          }
+          renderEssPortal();
+        });
+      }
+      if (essLeaveDateInput) {
+        essLeaveDateInput.addEventListener('change', () => {
+          if (!essLeaveDateInput.value) return;
+          essLeaveDate = essLeaveDateInput.value;
+          const tIso = toLocalIso(new Date());
+          const yIso = offsetDateIso(-1);
+          essLeavePeriod = essLeaveDate === tIso ? 'today' : (essLeaveDate === yIso ? 'yesterday' : 'custom');
+          if (essLeavePeriodSel) essLeavePeriodSel.value = essLeavePeriod;
+          renderEssPortal();
+        });
+      }
 
       document.addEventListener('DOMContentLoaded', () => {
         tickClock();

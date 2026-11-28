@@ -549,7 +549,7 @@
         const totalBase = emps.reduce((s, e) => s + Number(e.baseSalary || 0), 0);
         const totalAllow = emps.reduce((s, e) => s + Number(e.allowance || 0), 0);
         const avgAtt = emps.length
-          ? (emps.reduce((s, e) => s + Number(e.attendanceRate || 95), 0) / emps.length).toFixed(1)
+          ? (emps.reduce((s, e) => s + Number(e.attendanceRate !== undefined ? e.attendanceRate : 0), 0) / emps.length).toFixed(1)
           : '0.0';
         const deduction = Math.round((totalBase + totalAllow) * 0.05);
         return Object.assign({}, d, {
